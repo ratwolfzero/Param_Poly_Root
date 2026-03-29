@@ -162,9 +162,11 @@ Multiplicity alone does not determine geometric dominance. A lower-multiplicity 
 ## 4. Numerical Demonstration
 
 We consider:
+
 $$
 P(x) = x^7 (x-1)^3 (x+1)^3 (x-3)^5 (x+3)^5
 $$
+
 and compare:
 
 * \(a = 0\), \(m = 7\)
