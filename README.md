@@ -8,7 +8,7 @@ The characteristic deflection distance generalizes the classical condition numbe
 
 Symbolic and numerical Python implementations are provided, along with a worked example. The framework extends naturally to polynomials over the complex numbers.
 
-![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19303726.svg)(<https://doi.org/10.5281/zenodo.19303726>)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19303726.svg)](https://doi.org/10.5281/zenodo.19303726)
 
 ---
 
