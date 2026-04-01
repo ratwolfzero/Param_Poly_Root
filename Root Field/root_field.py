@@ -1,0 +1,231 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from mpmath import mp, mpf, mpc, matrix, eig
+
+# ========================= SETTINGS ========================= #
+
+mp.dps = 100
+
+# ========================= INPUT ========================= #
+
+def parse_coefficients(text):
+    coeffs = [mpf(x) for x in text.strip().split()]
+    while len(coeffs) > 1 and coeffs[0] == 0:
+        coeffs.pop(0)
+    return coeffs
+
+# ========================= POLYNOMIAL ========================= #
+
+def poly_eval(coeffs, x):
+    p = mpc(0)
+    for c in coeffs:
+        p = p * x + c
+    return p
+
+def poly_derivative(coeffs):
+    n = len(coeffs) - 1
+    return [coeffs[i] * (n - i) for i in range(len(coeffs)-1)]
+
+# ========================= ROOT SOLVER ========================= #
+
+def build_companion(coeffs):
+    a0 = coeffs[0]
+    a = [c / a0 for c in coeffs[1:]]
+    n = len(a)
+
+    C = matrix(n)
+    for i in range(1, n):
+        C[i, i-1] = 1
+    for i in range(n):
+        C[i, n-1] = -a[n-1-i]
+
+    return C
+
+def compute_roots(coeffs):
+    coeffs = list(coeffs)
+
+    # --- deflate zero roots ---
+    zero_mult = 0
+    while len(coeffs) > 1 and coeffs[-1] == 0:
+        coeffs = coeffs[:-1]
+        zero_mult += 1
+
+    if len(coeffs) == 1:
+        return [mpc(0)] * zero_mult
+
+    C = build_companion(coeffs)
+    roots = [mpc(r) for r in eig(C, left=False, right=False)]
+
+    roots += [mpc(0)] * zero_mult
+    return roots
+
+# ========================= CLUSTERING ========================= #
+
+def cluster_roots(roots, tol=mp.mpf('1e-10')):
+    # Agglomerative (Hierarchical) Clustering
+    clusters = [[r] for r in roots]
+    
+    while True:
+        merged = False
+        for i in range(len(clusters)):
+            for j in range(i + 1, len(clusters)):
+                # Calculate cluster centroids
+                c1 = sum(clusters[i]) / len(clusters[i])
+                c2 = sum(clusters[j]) / len(clusters[j])
+                
+                scale = max(abs(c1), abs(c2), mpf(1))
+                
+                if abs(c1 - c2) < tol * scale:
+                    # Merge the closest pair found within tolerance
+                    clusters[i].extend(clusters[j])
+                    clusters.pop(j)
+                    merged = True
+                    break # Break inner loop to restart with new centroids
+            if merged:
+                break # Break outer loop to restart
+        if not merged:
+            break # No more merges possible
+            
+    return clusters
+
+# ========================= δ COMPUTATION ========================= #
+
+def compute_cluster_delta(cluster, clusters):
+    # cluster center
+    a = sum(cluster) / len(cluster)
+    m = len(cluster)
+
+    log_sum = mpf(0)
+
+    for other in clusters:
+        if other is cluster:
+            continue
+
+        b = sum(other) / len(other)
+        k = len(other)
+
+        log_sum += k * mp.log(abs(a - b))
+
+    # Calculate delta using log-space mapping
+    delta = mp.e ** (-log_sum / m)
+
+    return a, m, delta
+
+def compute_all_deltas(clusters):
+    return [compute_cluster_delta(c, clusters) for c in clusters]
+
+# ========================= FIELD ========================= #
+
+def compute_field(coeffs, root_data, N=200):
+    roots = [a for a,_,_ in root_data]
+    R = max([abs(r) for r in roots] + [1]) * 1.5
+
+    xs = np.linspace(-float(R), float(R), N)
+    ys = np.linspace(-float(R), float(R), N)
+
+    dist = np.zeros((N, N))
+    flow_u = np.zeros((N, N))
+    flow_v = np.zeros((N, N))
+
+    dcoeffs = poly_derivative(coeffs)
+
+    for i, x in enumerate(xs):
+        for j, y in enumerate(ys):
+            z = mpc(x, y)
+
+            # δ-field
+            dmin = mp.inf
+            for a, m, delta in root_data:
+                val = abs(z - a) / delta
+                if val < dmin:
+                    dmin = val
+
+            dist[j, i] = float(mp.log10(dmin + 1e-30))
+
+            # Newton flow (Normalized to remove abrupt singularities)
+            p = poly_eval(coeffs, z)
+            dp = poly_eval(dcoeffs, z)
+
+            if abs(dp) > mp.mpf('1e-30'):
+                w = -p / dp
+                mag = abs(w)
+                if mag > 0:
+                    w = w / mag # Normalize the flow vector
+            else:
+                w = mpc(0)
+
+            flow_u[j, i] = float(mp.re(w))
+            flow_v[j, i] = float(mp.im(w))
+
+    return xs, ys, dist, flow_u, flow_v
+
+# ========================= PLOT ========================= #
+
+def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
+    X, Y = np.meshgrid(xs, ys)
+
+    plt.figure(figsize=(10,9))
+
+    plt.imshow(
+        dist,
+        extent=[xs[0], xs[-1], ys[0], ys[-1]],
+        origin='lower',
+        cmap='viridis'
+    )
+
+    plt.streamplot(
+        X, Y, flow_u, flow_v,
+        color='white',
+        density=1.2,
+        linewidth=0.6
+    )
+
+    for a, m, delta in root_data:
+        ar = float(mp.re(a))
+        ai = float(mp.im(a))
+        dr = float(delta)
+
+        plt.plot(ar, ai, 'ro')
+
+        circle = plt.Circle((ar, ai), dr,
+                            fill=False, linestyle='--')
+        plt.gca().add_patch(circle)
+
+        plt.text(ar, ai,
+                 f"m={m}\nδ={mp.nstr(delta,3)}",
+                 fontsize=8, ha='center')
+
+    plt.gca().set_aspect('equal')
+    plt.title("Stable δ Root Field (Cluster-Based, High Precision)")
+    plt.xlabel("Re(z)")
+    plt.ylabel("Im(z)")
+    plt.colorbar(label="log10(min |z-a| / δ)")
+    plt.grid(alpha=0.3)
+    plt.show()
+
+# ========================= MAIN ========================= #
+
+def main():
+    print("Enter polynomial coefficients (highest degree first, separated by spaces):")
+    text = input("Coefficients: ")
+    coeffs = parse_coefficients(text)
+
+    if not coeffs:
+        print("Invalid input.")
+        return
+
+    roots = compute_roots(coeffs)
+    clusters = cluster_roots(roots)
+    root_data = compute_all_deltas(clusters)
+
+    print("\nClustered roots:")
+    for a, m, delta in root_data:
+        print(f"a={mp.nstr(a,6)}, m={m}, δ={mp.nstr(delta,6)}")
+
+    print("\nComputing field layout (this may take a moment)...")
+    xs, ys, dist, fu, fv = compute_field(coeffs, root_data)
+
+    plot_field(xs, ys, dist, fu, fv, root_data)
+
+if __name__ == "__main__":
+    main()
