@@ -1,5 +1,7 @@
 # A Triplet-Based Parameterization for the Local Asymptotic Characterization of Polynomial Roots
 
+![Root Field](./Root-Field/Figure_1.png)
+
 ## Abstract
 
 This paper introduces a compact three-parameter framework for characterizing the local geometry of polynomial roots. For each root, the framework records its position, its algebraic multiplicity, and a newly defined quantity called the characteristic deflection distance. This third parameter acts as a natural geometric scale: it measures how sharply or gradually the polynomial departs from zero in the immediate vicinity of the root, and it encodes the collective influence of all other roots through their distances from the one being analyzed.
