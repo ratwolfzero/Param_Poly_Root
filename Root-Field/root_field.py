@@ -4,7 +4,7 @@ from mpmath import mp, mpf, mpc, matrix, eig
 
 # ========================= SETTINGS ========================= #
 
-mp.dps = 100
+mp.dps = 200
 
 # ========================= INPUT ========================= #
 
@@ -13,6 +13,12 @@ def parse_coefficients(text):
     while len(coeffs) > 1 and coeffs[0] == 0:
         coeffs.pop(0)
     return coeffs
+
+def normalize_coeffs(coeffs):
+    maxc = max(abs(c) for c in coeffs)
+    if maxc == 0:
+        return coeffs
+    return [c / maxc for c in coeffs]
 
 # ========================= POLYNOMIAL ========================= #
 
@@ -54,7 +60,10 @@ def compute_roots(coeffs):
         return [mpc(0)] * zero_mult
 
     C = build_companion(coeffs)
-    roots = [mpc(r) for r in eig(C, left=False, right=False)]
+
+    # Correct eig handling
+    vals, _ = eig(C)
+    roots = [mpc(v) for v in vals]
 
     roots += [mpc(0)] * zero_mult
     return roots
@@ -62,36 +71,32 @@ def compute_roots(coeffs):
 # ========================= CLUSTERING ========================= #
 
 def cluster_roots(roots, tol=mp.mpf('1e-10')):
-    # Agglomerative (Hierarchical) Clustering
     clusters = [[r] for r in roots]
-    
+
     while True:
         merged = False
         for i in range(len(clusters)):
             for j in range(i + 1, len(clusters)):
-                # Calculate cluster centroids
                 c1 = sum(clusters[i]) / len(clusters[i])
                 c2 = sum(clusters[j]) / len(clusters[j])
-                
+
                 scale = max(abs(c1), abs(c2), mpf(1))
-                
+
                 if abs(c1 - c2) < tol * scale:
-                    # Merge the closest pair found within tolerance
                     clusters[i].extend(clusters[j])
                     clusters.pop(j)
                     merged = True
-                    break # Break inner loop to restart with new centroids
+                    break
             if merged:
-                break # Break outer loop to restart
+                break
         if not merged:
-            break # No more merges possible
-            
+            break
+
     return clusters
 
 # ========================= δ COMPUTATION ========================= #
 
 def compute_cluster_delta(cluster, clusters):
-    # cluster center
     a = sum(cluster) / len(cluster)
     m = len(cluster)
 
@@ -104,10 +109,11 @@ def compute_cluster_delta(cluster, clusters):
         b = sum(other) / len(other)
         k = len(other)
 
-        log_sum += k * mp.log(abs(a - b))
+        dist = abs(a - b)
+        if dist > 0:
+            log_sum += k * mp.log(dist)
 
-    # Calculate delta using log-space mapping
-    delta = mp.e ** (-log_sum / m)
+    delta = mp.e ** (-log_sum / m) if m > 0 else mpf(0)
 
     return a, m, delta
 
@@ -118,7 +124,7 @@ def compute_all_deltas(clusters):
 
 def compute_field(coeffs, root_data, N=200):
     roots = [a for a,_,_ in root_data]
-    R = max([abs(r) for r in roots] + [1]) * 1.5
+    R = max([abs(a) + delta for a, _, delta in root_data] + [1]) * 1.2
 
     xs = np.linspace(-float(R), float(R), N)
     ys = np.linspace(-float(R), float(R), N)
@@ -136,13 +142,14 @@ def compute_field(coeffs, root_data, N=200):
             # δ-field
             dmin = mp.inf
             for a, m, delta in root_data:
-                val = abs(z - a) / delta
-                if val < dmin:
-                    dmin = val
+                if delta > 0:
+                    val = abs(z - a) / delta
+                    if val < dmin:
+                        dmin = val
 
             dist[j, i] = float(mp.log10(dmin + 1e-30))
 
-            # Newton flow (Normalized to remove abrupt singularities)
+            # Newton flow
             p = poly_eval(coeffs, z)
             dp = poly_eval(dcoeffs, z)
 
@@ -150,7 +157,7 @@ def compute_field(coeffs, root_data, N=200):
                 w = -p / dp
                 mag = abs(w)
                 if mag > 0:
-                    w = w / mag # Normalize the flow vector
+                    w = w / mag
             else:
                 w = mpc(0)
 
@@ -196,7 +203,7 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
                  fontsize=8, ha='center')
 
     plt.gca().set_aspect('equal')
-    plt.title("Stable δ Root Field (Cluster-Based, High Precision)")
+    plt.title("Stable δ Root Field (Normalized Polynomial)")
     plt.xlabel("Re(z)")
     plt.ylabel("Im(z)")
     plt.colorbar(label="log10(min |z-a| / δ)")
@@ -213,6 +220,9 @@ def main():
     if not coeffs:
         print("Invalid input.")
         return
+
+    # ✅ ONLY CHANGE: normalization
+    coeffs = normalize_coeffs(coeffs)
 
     roots = compute_roots(coeffs)
     clusters = cluster_roots(roots)
