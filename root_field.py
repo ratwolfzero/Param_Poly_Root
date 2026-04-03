@@ -168,38 +168,62 @@ def compute_field(coeffs, root_data, N=200):
 
 def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
     X, Y = np.meshgrid(xs, ys)
-
     plt.figure(figsize=(10, 9))
 
-    # Capture the imshow object to link it to a colorbar, specify colormap
+    # Background distance field
     im = plt.imshow(
-        dist, extent=[xs[0], xs[-1], ys[0], ys[-1]], origin='lower', cmap='viridis')
+        dist,
+        extent=[xs[0], xs[-1], ys[0], ys[-1]],
+        origin='lower',
+        cmap='viridis',
+        zorder=0  # always at the back
+    )
 
-    # Add a colorbar scaled to the image size with a meaningful label
+    # Colorbar
     cbar = plt.colorbar(im, fraction=0.046, pad=0.04)
     cbar.set_label(
-        r'Log Normalized Distance: $log_{10}(|z - a| / \delta)$', fontsize=10)
+        r'Log Normalized Distance: $log_{10}(|z - a| / \delta)$', fontsize=10
+    )
 
-    plt.streamplot(X, Y, flow_u, flow_v, density=1.2)
+    # Flow lines
+    plt.streamplot(
+        X, Y, flow_u, flow_v,
+        density=1.2,
+        color='white',
+        linewidth=0.7,
+        zorder=1  # above the background but below roots
+    )
 
+    # Root points, circles, and labels
     for a, m, delta in root_data:
         ar = float(mp.re(a))
         ai = float(mp.im(a))
         dr = float(delta)
 
-        plt.plot(ar, ai, 'ro')
-        circle = plt.Circle((ar, ai), dr, fill=False)
+        # Root points on top
+        plt.scatter(ar, ai, color='red', s=30, zorder=3)
+
+        # Circles slightly below points but above flow
+        circle = plt.Circle((ar, ai), dr, fill=False, edgecolor='red', alpha=0.6, zorder=2)
         plt.gca().add_patch(circle)
 
-        plt.text(ar, ai, f"m={m}\nδ={mp.nstr(delta, 3)}",
-                 fontsize=8, ha='center', va='bottom')
+        # Text labels above everything
+        plt.text(
+            ar, ai,
+            f"m={m}\nδ={mp.nstr(delta, 3)}",
+            fontsize=8,
+            ha='center',
+            va='bottom',
+            zorder=4
+        )
 
     plt.gca().set_aspect('equal')
 
-    # Updated title explaining the visual components
+    # Titles and axis labels
     plt.title("Global Newton Flow over δ-Normalized Root Influence Fields")
     plt.xlabel("Re(z)")
     plt.ylabel("Im(z)")
+
     plt.show()
 
 # ========================= MAIN ========================= #
