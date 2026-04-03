@@ -6,6 +6,8 @@ from mpmath import mp, mpc, mpf, matrix, eig
 mp.dps = 400
 
 # ========================= INPUT ========================= #
+
+
 def parse_coefficients(text):
     coeffs = []
     for token in text.strip().split():
@@ -32,17 +34,22 @@ def parse_coefficients(text):
     return coeffs
 
 # ========================= POLYNOMIAL ========================= #
+
+
 def poly_eval(coeffs, x):
     p = mpc(0)
     for c in coeffs:
         p = p * x + c
     return p
 
+
 def poly_derivative(coeffs):
     n = len(coeffs) - 1
     return [coeffs[i] * (n - i) for i in range(len(coeffs)-1)]
 
 # ========================= COMPANION ROOT SOLVER ========================= #
+
+
 def build_companion(coeffs):
     a0 = coeffs[0]
     a = [c / a0 for c in coeffs[1:]]
@@ -56,6 +63,7 @@ def build_companion(coeffs):
 
     return C
 
+
 def compute_roots(coeffs):
     C = build_companion(coeffs)
     vals, _ = eig(C)
@@ -63,6 +71,8 @@ def compute_roots(coeffs):
     return roots
 
 # ========================= CLUSTERING ========================= #
+
+
 def cluster_roots(roots, tol=mp.mpf('1e-20')):
     clusters = [[r] for r in roots]
 
@@ -87,6 +97,8 @@ def cluster_roots(roots, tol=mp.mpf('1e-20')):
     return clusters
 
 # ========================= DELTA ========================= #
+
+
 def compute_cluster_delta(cluster, clusters):
     a = sum(cluster) / len(cluster)
     m = len(cluster)
@@ -106,6 +118,8 @@ def compute_cluster_delta(cluster, clusters):
     return a, m, delta
 
 # ========================= FIELD ========================= #
+
+
 def compute_field(coeffs, root_data, N=200):
     R = max([abs(a) + delta for a, _, delta in root_data] + [1]) * 1.2
 
@@ -150,17 +164,21 @@ def compute_field(coeffs, root_data, N=200):
     return xs, ys, dist, flow_u, flow_v
 
 # ========================= PLOT ========================= #
+
+
 def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
     X, Y = np.meshgrid(xs, ys)
 
-    plt.figure(figsize=(10,9))
+    plt.figure(figsize=(10, 9))
 
     # Capture the imshow object to link it to a colorbar, specify colormap
-    im = plt.imshow(dist, extent=[xs[0], xs[-1], ys[0], ys[-1]], origin='lower', cmap='viridis')
-    
+    im = plt.imshow(
+        dist, extent=[xs[0], xs[-1], ys[0], ys[-1]], origin='lower', cmap='viridis')
+
     # Add a colorbar scaled to the image size with a meaningful label
     cbar = plt.colorbar(im, fraction=0.046, pad=0.04)
-    cbar.set_label(r'Log Normalized Distance: $log_{10}(|z - a| / \delta)$', fontsize=10)
+    cbar.set_label(
+        r'Log Normalized Distance: $log_{10}(|z - a| / \delta)$', fontsize=10)
 
     plt.streamplot(X, Y, flow_u, flow_v, density=1.2)
 
@@ -173,11 +191,11 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
         circle = plt.Circle((ar, ai), dr, fill=False)
         plt.gca().add_patch(circle)
 
-        plt.text(ar, ai, f"m={m}\nδ={mp.nstr(delta,3)}",
+        plt.text(ar, ai, f"m={m}\nδ={mp.nstr(delta, 3)}",
                  fontsize=8, ha='center', va='bottom')
 
     plt.gca().set_aspect('equal')
-    
+
     # Updated title explaining the visual components
     plt.title("Global Newton Flow over δ-Normalized Root Influence Fields")
     plt.xlabel("Re(z)")
@@ -185,6 +203,8 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
     plt.show()
 
 # ========================= MAIN ========================= #
+
+
 def main():
     text = input("Coefficients: ")
     coeffs = parse_coefficients(text)
@@ -195,11 +215,12 @@ def main():
 
     print("\nClustered roots:")
     for a, m, delta in root_data:
-        print(f"a={mp.nstr(a,6)}, m={m}, δ={mp.nstr(delta,6)}")
+        print(f"a={mp.nstr(a, 6)}, m={m}, δ={mp.nstr(delta, 6)}")
 
     print("\nComputing field layout...")
     xs, ys, dist, fu, fv = compute_field(coeffs, root_data)
     plot_field(xs, ys, dist, fu, fv, root_data)
+
 
 if __name__ == "__main__":
     main()
