@@ -222,20 +222,6 @@ with $\delta$ acting as the **quantitative bridge between algebraic structure an
 
 The triplet $(\mathcal{T}=(a,m,\delta))$ with $(a\in\mathbb{C})$ generalizes verbatim to polynomials $(P\in\mathbb{C}[x])$. In the complex plane, $(\delta)$ acquires the interpretation of an *intrinsic disk radius*: inside the disk $(|z-a|\lesssim\delta)$, the local geometry is canonically equivalent to that of $(t^m)$ after the scaling $(z=a+\delta t)$. This viewpoint unifies real-root stiffness with classical complex-analytic notions of root clustering, perturbation radii, and numerical stability in the complex domain. All code implementations remain unchanged.
 
-You are right to catch that. In the context of the title, "Local" can feel like a contradiction when the plot is clearly showing a "Global" interaction.
-
-The resolution lies in the fact that the **metric** is local, but the **field** is global. To make the title both rigorous and logically consistent with the "Global Visualization" heading, we should refine it to emphasize that we are viewing the global landscape *through the lens* of these local parameters.
-
-### Refined Title
-
-**"Global Newton Flow over $\delta$-Normalized Root Influence Fields"**
-
-This title works better because:
-
-1. **Global:** Acknowledges the full complex plane and the interaction between multiple roots.
-2. **$\delta$-Normalized:** Points to your specific triplet-based scaling.
-3. **Influence Fields:** Suggests that while $\delta$ is a local property of a root, its "shadow" or "influence" extends globally until it meets the influence of another root.
-
 ---
 
 ## 8. Global Visualization: Newton Flow and $\delta$-Root Fields
