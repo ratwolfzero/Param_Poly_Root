@@ -182,7 +182,7 @@ The computation yields $(\delta_0 \approx 0.208160)$ and $(\delta_3 \approx 0.01
 
 ### Version A — Symbolic
 
-See;
+See:
 param_poly_root_sym.py
 
 ---
@@ -261,5 +261,5 @@ In the resulting visualization, the streamlines reveal the basin of attraction f
 
 ### Computational Implementation
 
-See;
+See:
 root_field.py
