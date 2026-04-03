@@ -233,10 +233,13 @@ To visualize the global interaction of these triplets, we map the **$\delta$-Nor
 ### **Mathematical Definition**
 
 1. **Normalized Distance Field**: A scalar field representing the minimum logarithmic distance to any root, normalized by that root's specific $\delta$ scale. This allows for a scale-invariant comparison of roots with vastly different "stiffness."
+
     $$\text{Field}(z) = \log_{10} \left( \min_{i} \frac{|z - a_i|}{\delta_i} \right)$$
+
     The contour where the field value is $0$ corresponds to the boundary of the $\delta$-disks.
 
 2. **Newton Flow**: The continuous vector field representing the trajectories of the Newton-Raphson method.
+
     $$\vec{V}(z) = -\frac{P(z)}{P'(z)}$$
 
 ### **Implementation**
