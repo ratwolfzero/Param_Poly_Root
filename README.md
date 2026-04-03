@@ -314,3 +314,39 @@ with $\delta$ acting as the **quantitative bridge between algebraic structure an
 ## 7. Extension to Complex Polynomials
 
 The triplet $(\mathcal{T}=(a,m,\delta))$ with $(a\in\mathbb{C})$ generalizes verbatim to polynomials $(P\in\mathbb{C}[x])$. In the complex plane, $(\delta)$ acquires the interpretation of an *intrinsic disk radius*: inside the disk $(|z-a|\lesssim\delta)$, the local geometry is canonically equivalent to that of $(t^m)$ after the scaling $(z=a+\delta t)$. This viewpoint unifies real-root stiffness with classical complex-analytic notions of root clustering, perturbation radii, and numerical stability in the complex domain. All code implementations remain unchanged.
+
+You are right to catch that. In the context of the title, "Local" can feel like a contradiction when the plot is clearly showing a "Global" interaction.
+
+The resolution lies in the fact that the **metric** is local, but the **field** is global. To make the title both rigorous and logically consistent with the "Global Visualization" heading, we should refine it to emphasize that we are viewing the global landscape *through the lens* of these local parameters.
+
+### Refined Title
+
+**"Global Newton Flow over $\delta$-Normalized Root Influence Fields"**
+
+This title works better because:
+1. **Global:** Acknowledges the full complex plane and the interaction between multiple roots.
+2. **$\delta$-Normalized:** Points to your specific triplet-based scaling.
+3. **Influence Fields:** Suggests that while $\delta$ is a local property of a root, its "shadow" or "influence" extends globally until it meets the influence of another root.
+
+---
+
+## 8. Global Visualization: Newton Flow and $\delta$-Root Fields
+
+To visualize the global interaction of these triplets, we map the **$\delta$-Normalized Distance Field** and the **Newton Flow**. This provides a "topographical" view of the polynomial's geometry where every root is evaluated against its own intrinsic scale.
+
+### **Mathematical Definition**
+
+1. **Normalized Distance Field**: A scalar field representing the minimum logarithmic distance to any root, normalized by that root's specific $\delta$ scale. This allows for a scale-invariant comparison of roots with vastly different "stiffness."
+    $$\text{Field}(z) = \log_{10} \left( \min_{i} \frac{|z - a_i|}{\delta_i} \right)$$
+    The contour where the field value is $0$ corresponds to the boundary of the $\delta$-disks.
+
+2. **Newton Flow**: The continuous vector field representing the trajectories of the Newton-Raphson method.
+    $$\vec{V}(z) = -\frac{P(z)}{P'(z)}$$
+
+### **Implementation**
+
+This script uses `mpmath` for arbitrary-precision arithmetic, ensuring that the $\delta$ values and flow lines remain accurate even for high-multiplicity clusters where standard floats fail.
+
+### **Observation**
+
+In the resulting visualization, the streamlines reveal the basin of attraction for each root, while the background color reveals the **geometric footprint**. Notice that a root with a large $\delta$ exerts a wider "influence" on the distance field, even if its multiplicity $m$ is lower than neighboring roots.
