@@ -9,27 +9,22 @@ mp.dps = 400
 def parse_coefficients(text):
     coeffs = []
     for token in text.strip().split():
-        token = token.replace('I', 'i')  # normalize
-        token = token.replace(' ', '')
+        token = token.replace('I', 'i').replace('i', 'j')  # normalize
+        token = token.replace(' ', '')  # remove spaces
 
-        # purely imaginary numbers like -i, +i
-        if token in ('i', '+i'):
-            coeffs.append(mpc(0, 1))
-        elif token == '-i':
-            coeffs.append(mpc(0, -1))
-        # numbers like 3i or -2.5i
-        elif 'i' in token:
-            if token.endswith('i'):
-                imag_part = token[:-1]
-                if imag_part in ('', '+'):
-                    imag_part = '1'
-                elif imag_part == '-':
-                    imag_part = '-1'
-                coeffs.append(mpc(0, mpf(imag_part)))
+        try:
+            # convert string to Python complex first
+            z = complex(token)
+            coeffs.append(mpc(mpf(z.real), mpf(z.imag)))
+        except ValueError:
+            # handle pure "j" or "-j" like before
+            if token in ('j', '+j'):
+                coeffs.append(mpc(0, 1))
+            elif token == '-j':
+                coeffs.append(mpc(0, -1))
             else:
-                raise ValueError(f"Invalid token: {token}")
-        else:  # real number
-            coeffs.append(mpc(mpf(token), 0))
+                # maybe a real number
+                coeffs.append(mpc(mpf(token), 0))
 
     # remove leading zeros
     while len(coeffs) > 1 and coeffs[0] == 0:
