@@ -221,7 +221,6 @@ def main():
         print("Invalid input.")
         return
 
-    # ✅ ONLY CHANGE: normalization
     coeffs = normalize_coeffs(coeffs)
 
     roots = compute_roots(coeffs)
