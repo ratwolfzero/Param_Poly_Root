@@ -1,7 +1,6 @@
 # A Triplet-Based Parameterization for the Local Asymptotic Characterization of Polynomial Roots
 
 ![Root Field](./Root-Field/root_triplet.png)
-![Root Field](./Root-Field/Figure_1.png)
 
 ## Abstract
 
@@ -226,6 +225,8 @@ The triplet $(\mathcal{T}=(a,m,\delta))$ with $(a\in\mathbb{C})$ generalizes ver
 ---
 
 ## 8. Global Visualization: Newton Flow and $\delta$-Root Fields
+
+![Root Field](./Root-Field/Figure_1.png)
 
 To visualize the global interaction of these triplets, we map the **$\delta$-Normalized Distance Field** and the **Newton Flow**. This provides a "topographical" view of the polynomial's geometry where every root is evaluated against its own intrinsic scale.
 
