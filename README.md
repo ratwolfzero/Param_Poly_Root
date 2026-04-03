@@ -232,7 +232,7 @@ To visualize the global interaction of these triplets, we map the **$\delta$-Nor
 
 ### **Mathematical Definition**
 
-1. **Normalized Distance Field**: A scalar field representing the minimum logarithmic distance to any root, normalized by that root's specific $\delta$ scale. This allows for a scale-invariant comparison of roots with vastly different "stiffness."
+1. **Normalized Distance Field**: A scalar field representing the minimum logarithmic distance to any root, normalized by that root's specific $\delta$ scale. This allows for a scale-invariant comparison of roots with vastly different "stiffness"
 
     $$\text{Field}(z) = \log_{10} \left( \min_{i} \frac{|z - a_i|}{\delta_i} \right)$$
 
