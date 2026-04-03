@@ -258,3 +258,8 @@ This script uses `mpmath` for arbitrary-precision arithmetic, ensuring that the 
 ### **Observation**
 
 In the resulting visualization, the streamlines reveal the basin of attraction for each root, while the background color reveals the **geometric footprint**. Notice that a root with a large $\delta$ exerts a wider "influence" on the distance field, even if its multiplicity $m$ is lower than neighboring roots.
+
+### Computational Implementation
+
+See;
+root_field.py
