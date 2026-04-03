@@ -203,7 +203,11 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
                  fontsize=8, ha='center')
 
     plt.gca().set_aspect('equal')
-    plt.title("Stable δ Root Field (Normalized Polynomial)")
+    plt.title("δ-Root Field (Normalized Polynomial)\n"
+              "Each circle = intrinsic geometric scale δ\n"
+              "Color = δ-normalized distance to nearest root", 
+              fontsize=13, pad=20)
+    plt.tight_layout(rect=[0, 0.08, 1, 0.95])  # leave space for insight box
     plt.xlabel("Re(z)")
     plt.ylabel("Im(z)")
     plt.colorbar(label="log10(min |z-a| / δ)")
