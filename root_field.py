@@ -150,7 +150,6 @@ def compute_field(coeffs, root_data, N=200):
     return xs, ys, dist, flow_u, flow_v
 
 # ========================= PLOT ========================= #
-# ========================= PLOT ========================= #
 def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
     X, Y = np.meshgrid(xs, ys)
 

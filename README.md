@@ -1,6 +1,6 @@
 # A Triplet-Based Parameterization for the Local Asymptotic Characterization of Polynomial Roots
 
-![Root Field](./Root-Field/Figure_3.png)
+![Root Field](./Root-Field/Figure_1.png)
 
 ## Abstract
 
