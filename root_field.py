@@ -99,22 +99,25 @@ def cluster_roots(roots, tol=mp.mpf('1e-20')):
 # ========================= DELTA ========================= #
 
 
-def compute_cluster_delta(cluster, clusters):
+# ========================= DELTA ========================= #
+def compute_cluster_delta(cluster, clusters, lc):
     a = sum(cluster) / len(cluster)
     m = len(cluster)
     log_sum = mpf(0)
-
     for other in clusters:
         if other is cluster:
             continue
         b = sum(other) / len(other)
         k = len(other)
-
         dist = abs(a - b)
         if dist > 0:
             log_sum += k * mp.log(dist)
-
     delta = mp.e ** (-log_sum / m) if m > 0 else mpf(0)
+
+    # === NON-MONIC POLYNOMIALS ===
+    if m > 0 and lc != 0:
+        delta *= abs(lc) ** (-mpf(1) / m)  # |lc|^{-1/m}
+
     return a, m, delta
 
 # ========================= FIELD ========================= #
@@ -223,10 +226,18 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
 def main():
     text = input("Coefficients: ")
     coeffs = parse_coefficients(text)
+    
+    if not coeffs:
+        print("Empty polynomial")
+        return
+    lc = coeffs[0]
+
     print("\nComputing clustered roots...")
     roots = compute_roots(coeffs)
     clusters = cluster_roots(roots)
-    root_data = [compute_cluster_delta(c, clusters) for c in clusters]
+    
+    # pass lc to the delta function
+    root_data = [compute_cluster_delta(c, clusters, lc) for c in clusters]
 
     print("\nClustered roots:")
     for a, m, delta in root_data:
