@@ -170,37 +170,48 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
 
     plt.figure(figsize=(10, 9))
 
-    # Capture the imshow object to link it to a colorbar, specify colormap
+    # 1. Meaningful Scaling: vmin/vmax ensures the colormap highlights 
+    # the boundary where log10(|z-a|/delta) = 0.
     im = plt.imshow(
-        dist, extent=[xs[0], xs[-1], ys[0], ys[-1]], origin='lower', cmap='viridis')
+        dist, 
+        extent=[xs[0], xs[-1], ys[0], ys[-1]], 
+        origin='lower', 
+        cmap='viridis',
+        vmin=-1.0, 
+        vmax=1.5,
+        zorder=1
+    )
 
-    # Add a colorbar scaled to the image size with a meaningful label
+    # Add a colorbar with the mathematical label
     cbar = plt.colorbar(im, fraction=0.046, pad=0.04)
-    cbar.set_label(
-        r'Log Normalized Distance: $log_{10}(|z - a| / \delta)$', fontsize=10)
+    cbar.set_label(r'Log Normalized Distance: $\log_{10}(|z - a| / \delta)$', fontsize=10)
 
-    #plt.streamplot(X, Y, flow_u, flow_v, density=1.2)
-    plt.streamplot(X, Y, flow_u, flow_v, density=1.2, color='white', linewidth=0.7)
+    # 2. Newton Flow: Set zorder to sit above the field but below the markers
+    plt.streamplot(X, Y, flow_u, flow_v, density=1.2, color='white', linewidth=0.7, zorder=2)
 
     for a, m, delta in root_data:
         ar = float(mp.re(a))
         ai = float(mp.im(a))
         dr = float(delta)
 
-        #plt.plot(ar, ai, 'ro')
-        plt.scatter(ar, ai, color='red', s=30, zorder=3)
-        circle = plt.Circle((ar, ai), dr, fill=False)
+        # 3. Delta Circles: Red dashed lines to match the root dots
+        circle = plt.Circle((ar, ai), dr, fill=False, color='red', linestyle='--', linewidth=1.2, zorder=3)
         plt.gca().add_patch(circle)
 
-        plt.text(ar, ai, f"m={m}\nδ={mp.nstr(delta, 3)}",
-                 fontsize=8, ha='center', va='bottom')
+        # 4. Root Markers
+        plt.scatter(ar, ai, color='red', s=30, zorder=4)
+
+        
+        #plt.text(ar, ai+0.05, f"m={m}\nδ={mp.nstr(delta, 3)}",
+                 #fontsize=6,color='black',ha='center', va='bottom', zorder=5,
+                 #bbox=dict(facecolor='white', alpha=0.5, edgecolor='none', pad=1))
 
     plt.gca().set_aspect('equal')
 
-    # Updated title explaining the visual components
     plt.title("Global Newton Flow over δ-Normalized Root Influence Fields")
     plt.xlabel("Re(z)")
     plt.ylabel("Im(z)")
+    plt.tight_layout()
     plt.show()
 
 # ========================= MAIN ========================= #
