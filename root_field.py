@@ -195,7 +195,7 @@ def plot_field_original(xs, ys, dist, flow_u, flow_v, root_data):
         plt.scatter(ar, ai, color='red', s=30, zorder=4)
 
         # Labels: Black text on semi-transparent white
-        plt.text(ar, ai, f"m={m}\nδ={mp.nstr(delta, 3)}",
+        plt.text(ar, ai+0.05, f"m={m}\nδ={mp.nstr(delta, 3)}",
                  fontsize=8, ha='center', va='bottom', color='black', zorder=5,
                  bbox=dict(facecolor='white', alpha=0.6, edgecolor='none', pad=1))
 
@@ -238,7 +238,7 @@ def plot_field_universal(xs, ys, dist, flow_u, flow_v, root_data):
         plt.gca().add_patch(circle)
         plt.scatter(ar, ai, color='red', s=30, zorder=4)
 
-        plt.text(ar, ai, f"m={m}\nδ={mp.nstr(delta, 3)}",
+        plt.text(ar, ai+0.055, f"m={m}\nδ={mp.nstr(delta, 3)}",
                  fontsize=8, ha='center', va='bottom', color='black', zorder=5,
                  bbox=dict(facecolor='white', alpha=0.6, edgecolor='none', pad=1))
 
