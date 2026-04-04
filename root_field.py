@@ -124,21 +124,40 @@ def compute_cluster_delta(cluster, clusters, lc):
 
 
 def compute_field(coeffs, root_data, N=200):
-    R = max([abs(a) + delta for a, _, delta in root_data] + [1]) * 1.2
-
+    
+    # =============================================
+    # SWITCH BETWEEN THE TWO SCALING MODES HERE
+    # =============================================
+    use_global_scaling = False      # ←←← CHANGE THIS TO True / False
+    
+    if use_global_scaling:
+        # MODE 1: Global scaling
+        # Includes every δ → plot can become huge when there are very large δ values
+        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * 1.2
+        mode_desc = "GLOBAL SCALING (includes largest δ)"
+    else:
+        # MODE 2: Root-focused scaling
+        # Only looks at the actual root positions
+        max_abs_root = max([abs(a) for a, _, _ in root_data] + [mpf(1)])
+        R = max_abs_root * 1.5
+        mode_desc = "ROOT-FOCUSED SCALING (recommended)"
+    
+    print(f"   → Using {mode_desc} with R = {float(R):.1f}")
+    
+    # ====================== REST OF THE FUNCTION (unchanged) ======================
     xs = np.linspace(-float(R), float(R), N)
     ys = np.linspace(-float(R), float(R), N)
-
+    
     dist = np.zeros((N, N))
     flow_u = np.zeros((N, N))
     flow_v = np.zeros((N, N))
-
+    
     dcoeffs = poly_derivative(coeffs)
-
+    
     for i, x in enumerate(xs):
         for j, y in enumerate(ys):
             z = mpc(x, y)
-
+            
             # δ-distance field
             dmin = mp.inf
             for a, m, delta in root_data:
@@ -146,24 +165,24 @@ def compute_field(coeffs, root_data, N=200):
                     val = abs(z - a) / delta
                     if val < dmin:
                         dmin = val
-
             dist[j, i] = float(mp.log10(dmin + 1e-30))
-
+            
             # Newton flow (direction only)
             p = poly_eval(coeffs, z)
             dp = poly_eval(dcoeffs, z)
-
             if abs(dp) > mp.mpf('1e-30'):
                 w = -p / dp
                 mag = abs(w)
                 if mag > 0:
                     w = w / mag
+                else:
+                    w = mpc(0)
             else:
                 w = mpc(0)
-
+            
             flow_u[j, i] = float(mp.re(w))
             flow_v[j, i] = float(mp.im(w))
-
+    
     return xs, ys, dist, flow_u, flow_v
 
 # ========================= PLOT ========================= #
