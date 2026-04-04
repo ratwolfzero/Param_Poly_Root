@@ -266,7 +266,7 @@ def main():
 
     print("\nComputing field layout...")
     xs, ys, dist, fu, fv = compute_field(coeffs, root_data)
-    # plot_field_original(xs, ys, dist, fu, fv, root_data)
+    #plot_field_original(xs, ys, dist, fu, fv, root_data)
     plot_field_universal(xs, ys, dist, fu, fv, root_data)
 
 
