@@ -166,17 +166,18 @@ def compute_field(coeffs, root_data, N=200):
 # ========================= PLOT ========================= #
 
 
-def plot_field_original(xs, ys, dist, flow_u, flow_v, root_data):
+def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
     """
-    Original scaling: Maps the full dynamic range of the field.
-    The 0-boundary color shifts based on the polynomial's global stiffness.
+    Physically most honest scaling:
+    - Full auto-scaling by matplotlib (no artificial zero anchoring)
+    - Maximum contrast for any polynomial
+    - Clear on-plot remark about the shifting δ-boundary
     """
     X, Y = np.meshgrid(xs, ys)
     plt.figure(figsize=(10, 9))
 
-    # Automatic scaling across the entire range [-30, max]
     im = plt.imshow(dist, extent=[xs[0], xs[-1], ys[0], ys[-1]],
-                    origin='lower', cmap='viridis', zorder=1)
+                    origin='lower', cmap='viridis', zorder=1)   # ← viridis is excellent here
 
     cbar = plt.colorbar(im, fraction=0.046, pad=0.04)
     cbar.set_label(
@@ -186,68 +187,36 @@ def plot_field_original(xs, ys, dist, flow_u, flow_v, root_data):
                    color='white', linewidth=0.7, zorder=2)
 
     for a, m, delta in root_data:
-        ar, ai, dr = float(mp.re(a)), float(mp.im(a)), float(delta)
+        ar = float(mp.re(a))
+        ai = float(mp.im(a))
+        dr = float(delta)
 
-        # Red dashed boundary for delta
+        # Red dashed δ-boundary (analytical truth)
         circle = plt.Circle((ar, ai), dr, fill=False, color='red',
-                            linestyle='--', linewidth=1.2, zorder=3)
+                            linestyle='--', linewidth=1.5, zorder=3)
         plt.gca().add_patch(circle)
-        plt.scatter(ar, ai, color='red', s=30, zorder=4)
+        plt.scatter(ar, ai, color='red', s=40, zorder=4)
 
-        # Labels: Black text on semi-transparent white
-        plt.text(ar, ai+0.05, f"m={m}\nδ={mp.nstr(delta, 3)}",
-                 fontsize=8, ha='center', va='bottom', color='black', zorder=5,
-                 bbox=dict(facecolor='white', alpha=0.6, edgecolor='none', pad=1))
+        #plt.text(ar, ai + 0.05, f"m={m}\nδ={mp.nstr(delta, 3)}",
+                 #fontsize=8, ha='center', va='bottom', color='black', zorder=5,
+                 #bbox=dict(facecolor='white', alpha=0.75, edgecolor='none', pad=1))
+
+    # === PHYSICAL REMARK (always visible) ===
+    remark = ("Physically honest auto-scaling\n"
+              "δ-boundary (field = 0) colour shifts\n"
+              "with global field range of this polynomial")
+    plt.text(0.02, 0.98, remark, transform=plt.gca().transAxes,
+             fontsize=9, verticalalignment='top',
+             bbox=dict(facecolor='white', alpha=0.85, edgecolor='none', pad=3))
 
     plt.gca().set_aspect('equal')
-    plt.title("Global Newton Flow (Original Scaling)")
+    plt.title("Global Newton Flow over δ-Normalized Root Influence Fields")
     plt.xlabel("Re(z)")
     plt.ylabel("Im(z)")
     plt.tight_layout()
     plt.show()
 
 
-def plot_field_universal(xs, ys, dist, flow_u, flow_v, root_data):
-    """
-    Universal scaling: Anchors the 0-boundary (the delta-disk edge).
-    Ensures background topography is visible even with massive coefficients.
-    """
-    X, Y = np.meshgrid(xs, ys)
-    plt.figure(figsize=(10, 9))
-
-    # Calculate max for the top of the colorbar
-    v_max = dist.max()
-    v_max = v_max if v_max > 0 else 1.0
-
-    # Pin vmin to -1.0 to keep the '0' boundary visually consistent
-    im = plt.imshow(dist, extent=[xs[0], xs[-1], ys[0], ys[-1]],
-                    origin='lower', cmap='viridis', vmin=-1.0, vmax=v_max, zorder=1)
-
-    cbar = plt.colorbar(im, fraction=0.046, pad=0.04)
-    cbar.set_label(
-        r'Log Normalized Distance: $\log_{10}(|z - a| / \delta)$', fontsize=10)
-
-    plt.streamplot(X, Y, flow_u, flow_v, density=1.2,
-                   color='white', linewidth=0.7, zorder=2)
-
-    for a, m, delta in root_data:
-        ar, ai, dr = float(mp.re(a)), float(mp.im(a)), float(delta)
-
-        circle = plt.Circle((ar, ai), dr, fill=False, color='red',
-                            linestyle='--', linewidth=1.2, zorder=3)
-        plt.gca().add_patch(circle)
-        plt.scatter(ar, ai, color='red', s=30, zorder=4)
-
-        plt.text(ar, ai+0.055, f"m={m}\nδ={mp.nstr(delta, 3)}",
-                 fontsize=8, ha='center', va='bottom', color='black', zorder=5,
-                 bbox=dict(facecolor='white', alpha=0.6, edgecolor='none', pad=1))
-
-    plt.gca().set_aspect('equal')
-    plt.title("Global Newton Flow (Universal $\delta$-Anchored Scaling)")
-    plt.xlabel("Re(z)")
-    plt.ylabel("Im(z)")
-    plt.tight_layout()
-    plt.show()
 
 # ========================= MAIN ========================= #
 
@@ -266,8 +235,7 @@ def main():
 
     print("\nComputing field layout...")
     xs, ys, dist, fu, fv = compute_field(coeffs, root_data)
-    #plot_field_original(xs, ys, dist, fu, fv, root_data)
-    plot_field_universal(xs, ys, dist, fu, fv, root_data)
+    plot_field(xs, ys, dist, fu, fv, root_data)
 
 
 if __name__ == "__main__":
