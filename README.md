@@ -230,6 +230,8 @@ The triplet $(\mathcal{T}=(a,m,\delta))$ with $(a\in\mathbb{C})$ generalizes ver
 
 To visualize the global interaction of these triplets, we map the **$\delta$-Normalized Distance Field** and the **Newton Flow**. This provides a "topographical" view of the polynomial's geometry where every root is evaluated against its own intrinsic scale.
 
+<Section 8 extends the δ-based framework by introducing a δ-normalized distance field arising directly from the underlying local normalization. This construction depends solely on δ and induces a scale-invariant geometric representation of the root configuration, in which the multiplicative aggregation encoded in δ manifests as normalized spatial dominance.>
+
 ### **Mathematical Definition**
 
 1. **Normalized Distance Field**: A scalar field representing the minimum logarithmic distance to any root, normalized by that root's specific $\delta$ scale. This allows for a scale-invariant comparison of roots with vastly different "stiffness"
