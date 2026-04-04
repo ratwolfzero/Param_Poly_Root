@@ -256,3 +256,41 @@ In the resulting visualization, the streamlines reveal the basin of attraction f
 
 See:
 root_field.py
+
+Here is a concise, rigorous closing remark you can append directly:
+
+---
+
+## Conceptual Position
+
+The triplet
+
+$$
+T = (a, m, \delta)
+$$
+
+is defined via
+
+$$
+\delta = |\alpha|^{-1/m}, \quad \alpha = \frac{P^{(m)}(a)}{m!}
+$$
+
+and is therefore invariant under phase transformations
+
+$$
+\alpha \mapsto e^{i\theta}\alpha.
+$$
+
+This is intentional: the construction isolates the **intrinsic geometric scale** of a root while quotienting out orientation (sign in the real case, phase in the complex case), which does not affect the local asymptotic magnitude.
+
+Phase information can be recovered independently via
+
+$$
+\theta = \arg(\alpha),
+$$
+
+without modifying the triplet.
+
+**Thus, the triplet is the maximal phase-invariant local descriptor of a polynomial root.**
+
+---
