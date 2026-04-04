@@ -197,9 +197,9 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
         plt.gca().add_patch(circle)
         plt.scatter(ar, ai, color='red', s=40, zorder=4)
 
-        #plt.text(ar, ai + 0.05, f"m={m}\nδ={mp.nstr(delta, 3)}",
-                 #fontsize=8, ha='center', va='bottom', color='black', zorder=5,
-                 #bbox=dict(facecolor='white', alpha=0.75, edgecolor='none', pad=1))
+        # plt.text(ar, ai + 0.05, f"m={m}\nδ={mp.nstr(delta, 3)}",
+        # fontsize=8, ha='center', va='bottom', color='black', zorder=5,
+        # bbox=dict(facecolor='white', alpha=0.75, edgecolor='none', pad=1))
 
     # === PHYSICAL REMARK (always visible) ===
     remark = ("Physically honest auto-scaling\n"
@@ -215,7 +215,6 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
     plt.ylabel("Im(z)")
     plt.tight_layout()
     plt.show()
-
 
 
 # ========================= MAIN ========================= #
