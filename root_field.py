@@ -184,7 +184,7 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
         r'Log Normalized Distance: $\log_{10}(|z - a| / \delta)$', fontsize=10)
 
     plt.streamplot(X, Y, flow_u, flow_v, density=1.2,
-                   color='white', linewidth=0.7, zorder=2)
+                   color='black', linewidth=0.5, zorder=2)
 
     for a, m, delta in root_data:
         ar = float(mp.re(a))
