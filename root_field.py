@@ -140,7 +140,7 @@ def compute_field(coeffs, root_data, N=200):
         # Only looks at the actual root positions
         max_abs_root = max([abs(a) for a, _, _ in root_data] + [mpf(1)])
         R = max_abs_root * 1.5
-        mode_desc = "ROOT-FOCUSED SCALING (recommended)"
+        mode_desc = "ROOT-FOCUSED SCALING"
 
     print(f"   → Using {mode_desc} with R = {float(R):.1f}")
 
