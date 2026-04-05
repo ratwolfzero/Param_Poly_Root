@@ -250,7 +250,17 @@ This script uses `mpmath` for arbitrary-precision arithmetic, ensuring that the 
 
 ### **Observation**
 
-In the resulting visualization, the streamlines reveal the basin of attraction for each root, while the background color reveals the **geometric footprint**. Notice that a root with a large $\delta$ exerts a wider "influence" on the distance field, even if its multiplicity $m$ is lower than neighboring roots.
+In the resulting visualization, the streamlines reveal the basin of attraction for each root, while the background color reveals the **geometric footprint**. Notably, roots with larger $\delta$ values tend to exert a wider spatial influence on the distance field, even when their multiplicity $m$ is lower than that of nearby roots.
+
+This behavior reflects a general structural property of the δ-normalized field:
+
+### **Geometric Principle (δ-Weighted Influence)**
+
+The δ-normalized Newton field induces a scale-weighted basin geometry in which each root acts as a center of attraction whose effective influence is governed not by multiplicity alone, but by a global interaction scale encoded in δ.
+
+### **Corollary (Non-Dominance of Multiplicity)**
+
+Algebraic multiplicity alone does not determine the spatial extent of a root’s basin of influence. In particular, a root of lower multiplicity may dominate a larger region of the δ-normalized field than a higher-multiplicity root, depending on the global configuration of roots.
 
 ### Computational Implementation
 
