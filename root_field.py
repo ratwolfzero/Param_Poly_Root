@@ -128,7 +128,7 @@ def compute_field(coeffs, root_data, N=200):
     # =============================================
     # SWITCH BETWEEN THE TWO SCALING MODES HERE
     # =============================================
-    use_global_scaling = False      # ←←← CHANGE THIS TO True / False
+    use_global_scaling = True      # ←←← CHANGE THIS TO True / False
 
     if use_global_scaling:
         # MODE 1: Global scaling
