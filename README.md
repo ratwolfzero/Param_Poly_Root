@@ -229,7 +229,7 @@ The triplet $(\mathcal{T}=(a,m,\delta))$ with $(a\in\mathbb{C})$ generalizes ver
 
 ![Root Field](./Root-Field/Figure_1.png)
 
-To visualize the global interaction of these triplets, we map the **$\delta$-Normalized Distance Field** and the **Newton Flow**. This provides a "topographical" view of the polynomial's geometry where every root is evaluated against its own intrinsic scale.
+To visualize the spatial competition between these triplets, we map the **$\delta$-Normalized Distance Field** and the **Newton Flow**. This provides a "topographical" view of the polynomial's geometry where every root is evaluated against its own intrinsic scale.
 
 >Section 8 extends the δ-based framework by introducing a δ-normalized distance field arising directly from the underlying local normalization. This construction depends solely on δ and yields a scale-invariant geometric representation of the root configuration. In this representation, each root is evaluated relative to its intrinsic normalization scale, allowing direct comparison across roots of different multiplicities and configurations.
 
