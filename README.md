@@ -267,8 +267,6 @@ Algebraic multiplicity alone does not determine the spatial extent of a root’s
 See:
 root_field.py
 
-Here is a concise, rigorous closing remark you can append directly:
-
 ---
 
 ## Conceptual Position
