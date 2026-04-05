@@ -128,7 +128,7 @@ def compute_field(coeffs, root_data, N=200):
     # =============================================
     # SWITCH BETWEEN THE TWO SCALING MODES HERE
     # =============================================
-    use_global_scaling = True      # ←←← CHANGE THIS TO True / False
+    use_global_scaling = False      # ←←← CHANGE THIS TO True / False
 
     if use_global_scaling:
         # MODE 1: Global scaling
@@ -139,7 +139,7 @@ def compute_field(coeffs, root_data, N=200):
         # MODE 2: Root-focused scaling
         # Only looks at the actual root positions
         max_abs_root = max([abs(a) for a, _, _ in root_data] + [mpf(1)])
-        R = max_abs_root * 1.5
+        R = max_abs_root * 2
         mode_desc = "ROOT-FOCUSED SCALING"
 
     print(f"   → Using {mode_desc} with R = {float(R):.1f}")
