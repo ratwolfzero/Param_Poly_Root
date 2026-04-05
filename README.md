@@ -57,6 +57,7 @@ $$
 $$
 
 Thus, locally:
+
 $$
 P(x) = \alpha (x-a)^m + O\big((x-a)^{m+1}\big)
 $$
