@@ -340,9 +340,9 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data, poly_str, var):
     # 2. Combined Plot Title (Using the correct variable x or z)
     wrapped_eq = textwrap.fill(full_equation, width=80)
     combined_title = (
-        "Global Newton Flow over δ-Normalized Root Influence Fields\n"
-        f"$\mathbf{{P({var}):}}$ {wrapped_eq}"
-    )
+    "Global Newton Flow over δ-Normalized Root Influence Fields\n"
+    rf"$\mathbf{{P({var}):}}$ {wrapped_eq}"
+)
     
     plt.title(combined_title, fontsize=11, pad=15)
 
