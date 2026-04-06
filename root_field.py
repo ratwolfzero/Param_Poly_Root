@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpmath import mp, mpc, mpf, matrix, eig
+import textwrap
 
 # ========================= SETTINGS ========================= #
 mp.dps = 600
@@ -297,38 +298,55 @@ def compute_field(coeffs, root_data, N=200):
 
 # ========================= PLOT ========================= #
 
-def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
+def plot_field(xs, ys, dist, flow_u, flow_v, root_data, poly_str, var):
     """
     Physically most honest scaling:
-    - Full auto-scaling by matplotlib (no artificial zero anchoring)
-    - Maximum contrast for any polynomial
-    - Clear on-plot remark about the shifting δ-boundary
+    - Dynamic variable P(x) or P(z) based on coefficient types
+    - Wrapped polynomial equation included below the main title
     """
     X, Y = np.meshgrid(xs, ys)
     plt.figure(figsize=(10, 9))
 
+    # Background field
     im = plt.imshow(dist, extent=[xs[0], xs[-1], ys[0], ys[-1]],
-                    origin='lower', cmap='viridis', zorder=1)   # ← viridis is excellent here
+                    origin='lower', cmap='viridis', zorder=1)
 
     cbar = plt.colorbar(im, fraction=0.046, pad=0.04)
     cbar.set_label(
         r'Log Normalized Distance: $\log_{10}(|z - a| / \delta)$', fontsize=10)
 
+    # Newton Flow
     plt.streamplot(X, Y, flow_u, flow_v, density=1.2,
                    color='black', linewidth=0.5, zorder=2)
 
+    # Roots and Delta-Boundaries
     for a, m, delta in root_data:
         ar = float(mp.re(a))
         ai = float(mp.im(a))
         dr = float(delta)
 
-        # Red dashed δ-boundary (analytical truth)
         circle = plt.Circle((ar, ai), dr, fill=False, color='red',
                             linestyle='--', linewidth=1.5, zorder=3)
         plt.gca().add_patch(circle)
         plt.scatter(ar, ai, color='red', s=40, zorder=4)
 
-    # === PHYSICAL REMARK (always visible) ===
+    # === DYNAMIC TITLES ===
+    full_equation = f"{poly_str} = 0"
+    
+    # 1. Window Title
+    window_title = (full_equation[:75] + '...') if len(full_equation) > 75 else full_equation
+    plt.gcf().canvas.manager.set_window_title(window_title)
+
+    # 2. Combined Plot Title (Using the correct variable x or z)
+    wrapped_eq = textwrap.fill(full_equation, width=80)
+    combined_title = (
+        "Global Newton Flow over δ-Normalized Root Influence Fields\n"
+        f"$\mathbf{{P({var}):}}$ {wrapped_eq}"
+    )
+    
+    plt.title(combined_title, fontsize=11, pad=15)
+
+    # Physical Remark
     remark = ("Physically honest auto-scaling\n"
               "δ-boundary (field = 0) colour shifts\n"
               "with global field range of this polynomial")
@@ -337,7 +355,6 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
              bbox=dict(facecolor='white', alpha=0.85, edgecolor='none', pad=3))
 
     plt.gca().set_aspect('equal')
-    plt.title("Global Newton Flow over δ-Normalized Root Influence Fields")
     plt.xlabel("Re(z)")
     plt.ylabel("Im(z)")
     plt.tight_layout()
@@ -354,9 +371,9 @@ def main():
     var = 'x' if is_real_polynomial(coeffs) else 'z'
     poly_str = polynomial_to_string(coeffs, var=var)
 
-    print("\nPolynomial:")
+    print("\nPolynomial Equation:")
     print(f"   Degree: {degree}")
-    print(f"   P({var}) = {poly_str}")
+    print(f"   P({var}) = {poly_str} = 0")
 
     print("\nComputing clustered roots...")
     roots = compute_roots(coeffs)
@@ -371,7 +388,7 @@ def main():
 
     print("\nComputing field layout...")
     xs, ys, dist, fu, fv = compute_field(coeffs, root_data)
-    plot_field(xs, ys, dist, fu, fv, root_data)
+    plot_field(xs, ys, dist, fu, fv, root_data, poly_str, var)
 
 
 if __name__ == "__main__":
