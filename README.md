@@ -257,7 +257,7 @@ This behavior reflects a general structural property of the δ-normalized field:
 
 ### **Geometric Principle (δ-Weighted Influence)**
 
-The δ-normalized Newton field induces a scale-weighted basin geometry in which each root acts as a center of attraction whose effective influence is governed not by multiplicity alone, but by a global interaction scale encoded in δ.
+The δ-normalized distance field, together with the overlaid Newton flow, reveals a scale-weighted basin geometry in which each root acts as a center of attraction whose effective influence is governed not by multiplicity alone, but by a global interaction scale encoded in δ.
 
 ### **Corollary (Non-Dominance of Multiplicity)**
 
