@@ -46,7 +46,7 @@ def get_coefficients_from_user():
     print("Supports: i, I, j, complex numbers\n")
 
     while True:
-        # NEW: Replace commas with spaces to safely support comma-separated lists
+        # Replace commas with spaces to safely support comma-separated lists
         text = input("> ").replace(',', ' ')
 
         try:
@@ -102,7 +102,7 @@ def format_complex(z, precision=6):
     else:
         im_part = f"{sign}{im_str}i"
 
-    #Wrap in parentheses if it has both real and imaginary parts
+    # Wrap in parentheses if it has both real and imaginary parts
     return f"({re_str}{im_part})"
 
 def polynomial_to_string(coeffs, var='z', precision=6):
