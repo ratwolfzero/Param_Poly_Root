@@ -7,34 +7,144 @@ mp.dps = 600
 
 # ========================= INPUT ========================= #
 
-
-def parse_coefficients(text):
+def parse_coefficients_strict(text):
     coeffs = []
-    for token in text.strip().split():
-        token = token.replace('I', 'i').replace('i', 'j')  # normalize
-        token = token.replace(' ', '')  # remove spaces
+    tokens = text.strip().split()
+
+    if not tokens:
+        raise ValueError("Empty input.")
+
+    for token in tokens:
+        original = token
+
+        token = token.replace('I', 'i').replace('i', 'j')
+        token = token.replace(' ', '')
+
+        if token in ('j', '+j'):
+            coeffs.append(mpc(0, 1))
+            continue
+        elif token == '-j':
+            coeffs.append(mpc(0, -1))
+            continue
 
         try:
-            # convert string to Python complex first
             z = complex(token)
             coeffs.append(mpc(mpf(z.real), mpf(z.imag)))
-        except ValueError:
-            # handle pure "j" or "-j" like before
-            if token in ('j', '+j'):
-                coeffs.append(mpc(0, 1))
-            elif token == '-j':
-                coeffs.append(mpc(0, -1))
-            else:
-                # maybe a real number
-                coeffs.append(mpc(mpf(token), 0))
+        except Exception:
+            raise ValueError(f"Invalid coefficient: '{original}'")
 
-    # remove leading zeros
     while len(coeffs) > 1 and coeffs[0] == 0:
         coeffs.pop(0)
+
     return coeffs
 
-# ========================= POLYNOMIAL ========================= #
 
+def get_coefficients_from_user():
+    print("\nEnter polynomial coefficients (highest degree first).")
+    print("Separate coefficients by spaces or commas.")
+    print("IMPORTANT: Do not put spaces inside complex numbers (e.g., use 1+2i, not 1 + 2i).")
+    print("Supports: i, I, j, complex numbers\n")
+
+    while True:
+        # NEW: Replace commas with spaces to safely support comma-separated lists
+        text = input("> ").replace(',', ' ')
+
+        try:
+            coeffs = parse_coefficients_strict(text)
+
+            if len(coeffs) < 2:
+                raise ValueError("Polynomial degree must be at least 1.")
+
+            if all(c == 0 for c in coeffs):
+                raise ValueError("Polynomial cannot be all zeros.")
+
+            return coeffs
+
+        except ValueError as e:
+            print(f"\n❌ Input error: {e}")
+            print("Please try again.\n")
+
+# ========================= POLYNOMIAL FORMAT ========================= #
+
+def is_real_polynomial(coeffs):
+    return all(mp.im(c) == 0 for c in coeffs)
+
+
+def format_real(r, precision=6):
+    if mp.almosteq(r, mp.nint(r)):
+        return str(int(mp.nint(r)))
+    else:
+        return mp.nstr(r, precision)
+
+
+def format_complex(z, precision=6):
+    re = mp.re(z)
+    im = mp.im(z)
+
+    re_str = format_real(re, precision)
+    im_str = format_real(im, precision)
+
+    if im == 0:
+        return re_str
+
+    if re == 0:
+        if im_str == "1":
+            return "i"
+        elif im_str == "-1":
+            return "-i"
+        return f"{im_str}i"
+
+    sign = "+" if im > 0 else ""
+    if im_str == "1":
+        im_part = "+i"
+    elif im_str == "-1":
+        im_part = "-i"
+    else:
+        im_part = f"{sign}{im_str}i"
+
+    # NEW: Wrap in parentheses if it has both real and imaginary parts
+    return f"({re_str}{im_part})"
+
+def polynomial_to_string(coeffs, var='z', precision=6):
+    terms = []
+    n = len(coeffs) - 1
+
+    for i, c in enumerate(coeffs):
+        if c == 0:
+            continue
+
+        power = n - i
+        coeff_str = format_complex(c, precision)
+
+        if power > 0:
+            if coeff_str == "1":
+                coeff_str = ""
+            elif coeff_str == "-1":
+                coeff_str = "-"
+
+        if power == 0:
+            term = f"{coeff_str}"
+        elif power == 1:
+            term = f"{coeff_str}{var}"
+        else:
+            term = f"{coeff_str}{var}^{power}"
+
+        terms.append(term)
+
+    if not terms:
+        return "0"
+
+    poly = terms[0]
+    for t in terms[1:]:
+        if t.startswith('-'):
+            poly += " - " + t[1:]
+        else:
+            poly += " + " + t
+
+    return poly
+
+
+# ========================= POLYNOMIAL ========================= #
 
 def poly_eval(coeffs, x):
     p = mpc(0)
@@ -47,8 +157,8 @@ def poly_derivative(coeffs):
     n = len(coeffs) - 1
     return [coeffs[i] * (n - i) for i in range(len(coeffs)-1)]
 
-# ========================= COMPANION ROOT SOLVER ========================= #
 
+# ========================= COMPANION ROOT SOLVER ========================= #
 
 def build_companion(coeffs):
     a0 = coeffs[0]
@@ -70,8 +180,8 @@ def compute_roots(coeffs):
     roots = [mpc(v) for v in vals]
     return roots
 
-# ========================= CLUSTERING ========================= #
 
+# ========================= CLUSTERING ========================= #
 
 def cluster_roots(roots, tol=mp.mpf('1e-20')):
     clusters = [[r] for r in roots]
@@ -96,10 +206,9 @@ def cluster_roots(roots, tol=mp.mpf('1e-20')):
 
     return clusters
 
-# ========================= DELTA ========================= #
-
 
 # ========================= DELTA ========================= #
+
 def compute_cluster_delta(cluster, clusters, lc):
     a = sum(cluster) / len(cluster)
     m = len(cluster)
@@ -120,8 +229,8 @@ def compute_cluster_delta(cluster, clusters, lc):
 
     return a, m, delta
 
-# ========================= FIELD ========================= #
 
+# ========================= FIELD ========================= #
 
 def compute_field(coeffs, root_data, N=200):
 
@@ -144,7 +253,7 @@ def compute_field(coeffs, root_data, N=200):
 
     print(f"   → Using {mode_desc} with R = {float(R):.1f}")
 
-    # ====================== REST OF THE FUNCTION (unchanged) ======================
+    # ====================== REST OF THE FUNCTION ======================
     xs = np.linspace(-float(R), float(R), N)
     ys = np.linspace(-float(R), float(R), N)
 
@@ -185,8 +294,8 @@ def compute_field(coeffs, root_data, N=200):
 
     return xs, ys, dist, flow_u, flow_v
 
-# ========================= PLOT ========================= #
 
+# ========================= PLOT ========================= #
 
 def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
     """
@@ -219,10 +328,6 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
         plt.gca().add_patch(circle)
         plt.scatter(ar, ai, color='red', s=40, zorder=4)
 
-        # plt.text(ar, ai + 0.05, f"m={m}\nδ={mp.nstr(delta, 3)}",
-        # fontsize=8, ha='center', va='bottom', color='black', zorder=5,
-        # bbox=dict(facecolor='white', alpha=0.75, edgecolor='none', pad=1))
-
     # === PHYSICAL REMARK (always visible) ===
     remark = ("Physically honest auto-scaling\n"
               "δ-boundary (field = 0) colour shifts\n"
@@ -241,15 +346,17 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data):
 
 # ========================= MAIN ========================= #
 
-
 def main():
-    text = input("Coefficients: ")
-    coeffs = parse_coefficients(text)
-
-    if not coeffs:
-        print("Empty polynomial")
-        return
+    coeffs = get_coefficients_from_user()
     lc = coeffs[0]
+
+    degree = len(coeffs) - 1
+    var = 'x' if is_real_polynomial(coeffs) else 'z'
+    poly_str = polynomial_to_string(coeffs, var=var)
+
+    print("\nPolynomial:")
+    print(f"   Degree: {degree}")
+    print(f"   P({var}) = {poly_str}")
 
     print("\nComputing clustered roots...")
     roots = compute_roots(coeffs)
