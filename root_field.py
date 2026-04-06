@@ -102,7 +102,7 @@ def format_complex(z, precision=6):
     else:
         im_part = f"{sign}{im_str}i"
 
-    # NEW: Wrap in parentheses if it has both real and imaginary parts
+    #Wrap in parentheses if it has both real and imaginary parts
     return f"({re_str}{im_part})"
 
 def polynomial_to_string(coeffs, var='z', precision=6):
