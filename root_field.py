@@ -362,7 +362,7 @@ def compute_field_mpmath(coeffs, root_data, N=400):
     return xs, ys, dist, flow_u, flow_v
 
 
-def compute_field(coeffs, root_data, N=400):
+def compute_field(coeffs, root_data, N=800):
     """
     Dispatcher: routes to fast (float64) or precise (mpmath) implementation
     based on the minimum pairwise separation between cluster centroids.
