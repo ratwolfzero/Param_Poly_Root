@@ -297,12 +297,141 @@ def compute_field(coeffs, root_data, N=200):
 """
 
 
+# ========================= FIELD ========================= #
+
+FLOAT64_SAFE_THRESHOLD = mpf('1e-13')
+
+
+def _min_centroid_separation(root_data):
+    """Minimum pairwise distance between cluster centroids."""
+    centroids = [a for a, m, delta in root_data]
+    if len(centroids) < 2:
+        return mp.inf
+    min_sep = mp.inf
+    for i in range(len(centroids)):
+        for j in range(i + 1, len(centroids)):
+            d = abs(centroids[i] - centroids[j])
+            if d < min_sep:
+                min_sep = d
+    return min_sep
+
+
+def compute_field_fast(coeffs, root_data, N=400):
+    """
+    Vectorized float64 field computation.
+    Fast and stable when all cluster centroids are separated by > ~1e-13.
+    Uses logarithmic derivative identity for Newton flow — avoids catastrophic
+    cancellation near high-multiplicity roots.
+    """
+    use_global_scaling = True
+
+    if use_global_scaling:
+        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * 1.2
+    else:
+        max_abs_root = max([abs(a) for a, _, _ in root_data] + [mpf(1)])
+        R = max_abs_root * 1.5
+
+    roots_f  = np.array([complex(a)   for a, m, delta in root_data], dtype=complex)
+    m_f      = np.array([float(m)     for a, m, delta in root_data], dtype=float)
+    deltas_f = np.array([float(delta) for a, m, delta in root_data], dtype=float)
+
+    xs = np.linspace(-float(R), float(R), N)
+    ys = np.linspace(-float(R), float(R), N)
+    X, Y = np.meshgrid(xs, ys)
+    Z = X + 1j * Y
+
+    diffs       = Z[..., np.newaxis] - roots_f
+    dist_matrix = np.abs(diffs) / deltas_f
+    min_dist    = np.min(dist_matrix, axis=-1)
+    dist        = np.log10(min_dist + 1e-30)
+
+    EPS       = 1e-30
+    abs_diffs = np.abs(diffs)
+    safe_diffs = np.where(abs_diffs < EPS, EPS, diffs)
+    log_deriv  = np.sum(m_f / safe_diffs, axis=-1)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        w      = -1.0 / log_deriv
+        mag    = np.abs(w)
+        inv_mag = np.where(mag > 0, mag, 1.0)
+        flow_u = np.real(w) / inv_mag
+        flow_v = np.imag(w) / inv_mag
+
+        bad = (mag == 0) | ~np.isfinite(mag)
+        flow_u[bad] = 0.0
+        flow_v[bad] = 0.0
+
+    return xs, ys, dist, flow_u, flow_v
+
+
+def compute_field_mpmath(coeffs, root_data, N=400):
+    """
+    Mpmath pixel-loop field computation.
+    Slow but correct at arbitrary precision — used automatically when cluster
+    centroids are separated by less than FLOAT64_SAFE_THRESHOLD (~1e-13),
+    i.e. when float64 cannot resolve the root structure.
+    """
+    use_global_scaling = True
+
+    if use_global_scaling:
+        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * 1.2
+    else:
+        max_abs_root = max([abs(a) for a, _, _ in root_data] + [mpf(1)])
+        R = max_abs_root * 1.5
+
+    xs = np.linspace(-float(R), float(R), N)
+    ys = np.linspace(-float(R), float(R), N)
+
+    dist   = np.zeros((N, N))
+    flow_u = np.zeros((N, N))
+    flow_v = np.zeros((N, N))
+
+    dcoeffs = poly_derivative(coeffs)
+
+    for i, x in enumerate(xs):
+        for j, y in enumerate(ys):
+            z = mpc(x, y)
+
+            # δ-distance field
+            dmin = mp.inf
+            for a, m, delta in root_data:
+                if delta > 0:
+                    val = abs(z - a) / delta
+                    if val < dmin:
+                        dmin = val
+            dist[j, i] = float(mp.log10(dmin + mpf('1e-30')))
+
+            # Newton flow via logarithmic derivative (consistent with fast path)
+            log_deriv = mpc(0)
+            for a, m, delta in root_data:
+                dz = z - a
+                if abs(dz) > mpf('1e-30'):
+                    log_deriv += m / dz
+            if abs(log_deriv) > mpf('1e-30'):
+                w   = -mpc(1) / log_deriv
+                mag = abs(w)
+                if mag > 0:
+                    w = w / mag
+                else:
+                    w = mpc(0)
+            else:
+                w = mpc(0)
+
+            flow_u[j, i] = float(mp.re(w))
+            flow_v[j, i] = float(mp.im(w))
+
+    return xs, ys, dist, flow_u, flow_v
+
+
 def compute_field(coeffs, root_data, N=400):
     """
-    Hybrid vectorized field computation.
-    - Distance field: broadcasting (fast, stable)
-    - Newton flow: logarithmic derivative identity (fast AND stable near high-multiplicity roots)
-      Avoids np.polyval catastrophic cancellation for polynomials like (x-1)^20.
+    Dispatcher: routes to fast (float64) or precise (mpmath) implementation
+    based on the minimum pairwise separation between cluster centroids.
+
+    Single cluster: float64 is trivially safe (nothing to misresolve).
+    Fast path:      separation > FLOAT64_SAFE_THRESHOLD  (~1e-13)
+    Fallback:       separation ≤ FLOAT64_SAFE_THRESHOLD
+                    (float64 cannot resolve root structure at this scale)
     """
     use_global_scaling = True
 
@@ -316,47 +445,21 @@ def compute_field(coeffs, root_data, N=400):
 
     print(f"   → Using {mode_desc} with R = {float(R):.1f}")
 
-    # Convert mpmath root data to float64
-    roots_f  = np.array([complex(a)     for a, m, delta in root_data], dtype=complex)
-    m_f      = np.array([float(m)       for a, m, delta in root_data], dtype=float)
-    deltas_f = np.array([float(delta)   for a, m, delta in root_data], dtype=float)
+    if len(root_data) == 1:
+        print("   → Single cluster — no centroid separation to measure")
+        print("   → float64 path (fast vectorized)")
+        return compute_field_fast(coeffs, root_data, N)
 
-    xs = np.linspace(-float(R), float(R), N)
-    ys = np.linspace(-float(R), float(R), N)
-    X, Y = np.meshgrid(xs, ys)
-    Z = X + 1j * Y  # shape (N, N)
+    min_sep = _min_centroid_separation(root_data)
+    print(f"   → Minimum centroid separation: {mp.nstr(min_sep, 6)}")
 
-    # ── 1. Distance field ────────────────────────────────────────────────────
-    # diffs shape: (N, N, n_clusters)
-    diffs = Z[..., np.newaxis] - roots_f          # broadcasting
-    dist_matrix = np.abs(diffs) / deltas_f
-    min_dist = np.min(dist_matrix, axis=-1)
-    dist = np.log10(min_dist + 1e-30)
-
-    # ── 2. Newton flow via logarithmic derivative ────────────────────────────
-    # P'(z)/P(z) = Σ  m_i / (z - a_i)
-    # w = -P/P'  = -1 / Σ  m_i / (z - a_i)
-    #
-    # Safe denominator floor avoids 0/0 exactly on a root.
-    EPS = 1e-30
-    abs_diffs = np.abs(diffs)
-    safe_diffs = np.where(abs_diffs < EPS, EPS, diffs)   # shape (N, N, n_clusters)
-
-    log_deriv = np.sum(m_f / safe_diffs, axis=-1)         # Σ m_i/(z-a_i)
-
-    with np.errstate(divide='ignore', invalid='ignore'):
-        w   = -1.0 / log_deriv
-        mag = np.abs(w)
-        inv_mag = np.where(mag > 0, mag, 1.0)
-        flow_u = np.real(w) / inv_mag
-        flow_v = np.imag(w) / inv_mag
-
-        # Zero out degenerate pixels (exactly on a root, all directions pull equally)
-        bad = (mag == 0) | ~np.isfinite(mag)
-        flow_u[bad] = 0.0
-        flow_v[bad] = 0.0
-
-    return xs, ys, dist, flow_u, flow_v
+    if min_sep > FLOAT64_SAFE_THRESHOLD:
+        print("   → float64 path (fast vectorized)")
+        return compute_field_fast(coeffs, root_data, N)
+    else:
+        print(f"   → mpmath fallback path (separation {mp.nstr(min_sep, 3)} ≤ threshold {FLOAT64_SAFE_THRESHOLD})")
+        print("      This may be slow — pixel loop at full mpmath precision.")
+        return compute_field_mpmath(coeffs, root_data, N)
 
 """
 def compute_field(coeffs, root_data, N=300):
