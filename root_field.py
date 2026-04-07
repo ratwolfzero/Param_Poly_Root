@@ -232,7 +232,7 @@ def compute_cluster_delta(cluster, clusters, lc):
 
 
 # ========================= FIELD ========================= #
-
+"""
 def compute_field(coeffs, root_data, N=200):
 
     # =============================================
@@ -294,7 +294,68 @@ def compute_field(coeffs, root_data, N=200):
             flow_v[j, i] = float(mp.im(w))
 
     return xs, ys, dist, flow_u, flow_v
+"""
 
+def compute_field(coeffs, root_data, N=400):
+    """
+    Hybrid vectorized field computation.
+    - Distance field: broadcasting (fast, stable)
+    - Newton flow: logarithmic derivative identity (fast AND stable near high-multiplicity roots)
+      Avoids np.polyval catastrophic cancellation for polynomials like (x-1)^20.
+    """
+    use_global_scaling = True
+
+    if use_global_scaling:
+        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * 1.2
+        mode_desc = "GLOBAL SCALING (includes largest δ)"
+    else:
+        max_abs_root = max([abs(a) for a, _, _ in root_data] + [mpf(1)])
+        R = max_abs_root * 1.5
+        mode_desc = "ROOT-FOCUSED SCALING"
+
+    print(f"   → Using {mode_desc} with R = {float(R):.1f}")
+
+    # Convert mpmath root data to float64
+    roots_f  = np.array([complex(a)     for a, m, delta in root_data], dtype=complex)
+    m_f      = np.array([float(m)       for a, m, delta in root_data], dtype=float)
+    deltas_f = np.array([float(delta)   for a, m, delta in root_data], dtype=float)
+
+    xs = np.linspace(-float(R), float(R), N)
+    ys = np.linspace(-float(R), float(R), N)
+    X, Y = np.meshgrid(xs, ys)
+    Z = X + 1j * Y  # shape (N, N)
+
+    # ── 1. Distance field ────────────────────────────────────────────────────
+    # diffs shape: (N, N, n_clusters)
+    diffs = Z[..., np.newaxis] - roots_f          # broadcasting
+    dist_matrix = np.abs(diffs) / deltas_f
+    min_dist = np.min(dist_matrix, axis=-1)
+    dist = np.log10(min_dist + 1e-30)
+
+    # ── 2. Newton flow via logarithmic derivative ────────────────────────────
+    # P'(z)/P(z) = Σ  m_i / (z - a_i)
+    # w = -P/P'  = -1 / Σ  m_i / (z - a_i)
+    #
+    # Safe denominator floor avoids 0/0 exactly on a root.
+    EPS = 1e-30
+    abs_diffs = np.abs(diffs)
+    safe_diffs = np.where(abs_diffs < EPS, EPS, diffs)   # shape (N, N, n_clusters)
+
+    log_deriv = np.sum(m_f / safe_diffs, axis=-1)         # Σ m_i/(z-a_i)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        w   = -1.0 / log_deriv
+        mag = np.abs(w)
+        inv_mag = np.where(mag > 0, mag, 1.0)
+        flow_u = np.real(w) / inv_mag
+        flow_v = np.imag(w) / inv_mag
+
+        # Zero out degenerate pixels (exactly on a root, all directions pull equally)
+        bad = (mag == 0) | ~np.isfinite(mag)
+        flow_u[bad] = 0.0
+        flow_v[bad] = 0.0
+
+    return xs, ys, dist, flow_u, flow_v
 
 # ========================= PLOT ========================= #
 
