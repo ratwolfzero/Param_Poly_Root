@@ -7,11 +7,11 @@ import textwrap
 # set arbitrary precision
 mp.dps = 600
 
-# Quality setting: controls both computation mode and resolution
-# 'low' = fast mode, low resolution (quick computation)
-# 'medium' = auto mode, medium resolution (balanced)
-# 'high' = auto mode, high resolution (detailed but slower)
-QUALITY = 'medium'
+# Computation mode: 'auto', 'fast', or 'mpmath'
+MODE = 'auto'
+
+# Grid resolution: number of points per axis (applies to 'auto' and 'fast' modes; 'mpmath' always uses 200)
+GRID_RESOLUTION = 800
 
 # Scaling mode: True = global scaling (includes largest δ), False = root-focused scaling
 USE_GLOBAL_SCALING = True
@@ -386,7 +386,7 @@ def compute_field(coeffs, root_data, N=800, mode='auto'):
     mode='fast'   — always float64 vectorized (may lose precision for close roots)
     mode='mpmath' — always full mpmath pixel loop (slow, arbitrary precision)
     """
-    use_global_scaling = True
+    use_global_scaling = USE_GLOBAL_SCALING
 
     if use_global_scaling:
         R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * 1.2
@@ -518,24 +518,17 @@ def main():
     for a, m, delta in root_data:
         print(f"a={mp.nstr(a, 6)}, m={m}, δ={mp.nstr(delta, 6)}")
 
-    # Set computation parameters based on quality setting
-    if QUALITY == 'low':
-        field_mode = 'fast'
-        grid_resolution = 200
-    elif QUALITY == 'medium':
-        field_mode = 'auto'
-        grid_resolution = 400
-    elif QUALITY == 'high':
-        field_mode = 'auto'
-        grid_resolution = 800
-    else:
-        # Default to high
-        field_mode = 'auto'
-        grid_resolution = 800
+    # Use settings directly
+    field_mode = MODE
+    grid_resolution = GRID_RESOLUTION
+    
+    # Cap mpmath resolution for performance
+    if field_mode == 'mpmath':
+        grid_resolution = min(grid_resolution, 200)
 
-    print(f"\nUsing quality setting: {QUALITY}")
-    print(f"Field computation mode: {field_mode}")
+    print(f"\nUsing computation mode: {field_mode}")
     print(f"Grid resolution: {grid_resolution}x{grid_resolution}")
+    print(f"Scaling mode: {'global' if USE_GLOBAL_SCALING else 'root-focused'}")
 
     print("\nComputing field layout...")
     xs, ys, dist, fu, fv = compute_field(coeffs, root_data, mode=field_mode, N=grid_resolution)
