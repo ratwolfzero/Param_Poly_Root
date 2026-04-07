@@ -8,6 +8,7 @@ mp.dps = 600
 
 # ========================= INPUT ========================= #
 
+
 def parse_coefficients_strict(text):
     coeffs = []
     tokens = text.strip().split()
@@ -67,6 +68,7 @@ def get_coefficients_from_user():
 
 # ========================= POLYNOMIAL FORMAT ========================= #
 
+
 def is_real_polynomial(coeffs):
     return all(mp.im(c) == 0 for c in coeffs)
 
@@ -105,6 +107,7 @@ def format_complex(z, precision=6):
 
     # Wrap in parentheses if it has both real and imaginary parts
     return f"({re_str}{im_part})"
+
 
 def polynomial_to_string(coeffs, var='z', precision=6):
     terms = []
@@ -232,72 +235,6 @@ def compute_cluster_delta(cluster, clusters, lc):
 
 
 # ========================= FIELD ========================= #
-"""
-def compute_field(coeffs, root_data, N=200):
-
-    # =============================================
-    # SWITCH BETWEEN THE TWO SCALING MODES HERE
-    # =============================================
-    use_global_scaling = True      # ←←← CHANGE THIS TO True / False
-
-    if use_global_scaling:
-        # MODE 1: Global scaling
-        # Includes every δ → plot can become huge when there are very large δ values
-        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * 1.2
-        mode_desc = "GLOBAL SCALING (includes largest δ)"
-    else:
-        # MODE 2: Root-focused scaling
-        # Only looks at the actual root positions
-        max_abs_root = max([abs(a) for a, _, _ in root_data] + [mpf(1)])
-        R = max_abs_root * 1.5
-        mode_desc = "ROOT-FOCUSED SCALING"
-
-    print(f"   → Using {mode_desc} with R = {float(R):.1f}")
-
-    # ====================== REST OF THE FUNCTION ======================
-    xs = np.linspace(-float(R), float(R), N)
-    ys = np.linspace(-float(R), float(R), N)
-
-    dist = np.zeros((N, N))
-    flow_u = np.zeros((N, N))
-    flow_v = np.zeros((N, N))
-
-    dcoeffs = poly_derivative(coeffs)
-
-    for i, x in enumerate(xs):
-        for j, y in enumerate(ys):
-            z = mpc(x, y)
-
-            # δ-distance field
-            dmin = mp.inf
-            for a, m, delta in root_data:
-                if delta > 0:
-                    val = abs(z - a) / delta
-                    if val < dmin:
-                        dmin = val
-            dist[j, i] = float(mp.log10(dmin + 1e-30))
-
-            # Newton flow (direction only)
-            p = poly_eval(coeffs, z)
-            dp = poly_eval(dcoeffs, z)
-            if abs(dp) > mp.mpf('1e-30'):
-                w = -p / dp
-                mag = abs(w)
-                if mag > 0:
-                    w = w / mag
-                else:
-                    w = mpc(0)
-            else:
-                w = mpc(0)
-
-            flow_u[j, i] = float(mp.re(w))
-            flow_v[j, i] = float(mp.im(w))
-
-    return xs, ys, dist, flow_u, flow_v
-"""
-
-
-# ========================= FIELD ========================= #
 
 FLOAT64_SAFE_THRESHOLD = mpf('1e-13')
 
@@ -331,28 +268,30 @@ def compute_field_fast(coeffs, root_data, N=400):
         max_abs_root = max([abs(a) for a, _, _ in root_data] + [mpf(1)])
         R = max_abs_root * 1.5
 
-    roots_f  = np.array([complex(a)   for a, m, delta in root_data], dtype=complex)
-    m_f      = np.array([float(m)     for a, m, delta in root_data], dtype=float)
-    deltas_f = np.array([float(delta) for a, m, delta in root_data], dtype=float)
+    roots_f = np.array([complex(a)
+                       for a, m, delta in root_data], dtype=complex)
+    m_f = np.array([float(m) for a, m, delta in root_data], dtype=float)
+    deltas_f = np.array([float(delta)
+                        for a, m, delta in root_data], dtype=float)
 
     xs = np.linspace(-float(R), float(R), N)
     ys = np.linspace(-float(R), float(R), N)
     X, Y = np.meshgrid(xs, ys)
     Z = X + 1j * Y
 
-    diffs       = Z[..., np.newaxis] - roots_f
+    diffs = Z[..., np.newaxis] - roots_f
     dist_matrix = np.abs(diffs) / deltas_f
-    min_dist    = np.min(dist_matrix, axis=-1)
-    dist        = np.log10(min_dist + 1e-30)
+    min_dist = np.min(dist_matrix, axis=-1)
+    dist = np.log10(min_dist + 1e-30)
 
-    EPS       = 1e-30
+    EPS = 1e-30
     abs_diffs = np.abs(diffs)
     safe_diffs = np.where(abs_diffs < EPS, EPS, diffs)
-    log_deriv  = np.sum(m_f / safe_diffs, axis=-1)
+    log_deriv = np.sum(m_f / safe_diffs, axis=-1)
 
     with np.errstate(divide='ignore', invalid='ignore'):
-        w      = -1.0 / log_deriv
-        mag    = np.abs(w)
+        w = -1.0 / log_deriv
+        mag = np.abs(w)
         inv_mag = np.where(mag > 0, mag, 1.0)
         flow_u = np.real(w) / inv_mag
         flow_v = np.imag(w) / inv_mag
@@ -382,7 +321,7 @@ def compute_field_mpmath(coeffs, root_data, N=400):
     xs = np.linspace(-float(R), float(R), N)
     ys = np.linspace(-float(R), float(R), N)
 
-    dist   = np.zeros((N, N))
+    dist = np.zeros((N, N))
     flow_u = np.zeros((N, N))
     flow_v = np.zeros((N, N))
 
@@ -408,7 +347,7 @@ def compute_field_mpmath(coeffs, root_data, N=400):
                 if abs(dz) > mpf('1e-30'):
                     log_deriv += m / dz
             if abs(log_deriv) > mpf('1e-30'):
-                w   = -mpc(1) / log_deriv
+                w = -mpc(1) / log_deriv
                 mag = abs(w)
                 if mag > 0:
                     w = w / mag
@@ -457,96 +396,12 @@ def compute_field(coeffs, root_data, N=400):
         print("   → float64 path (fast vectorized)")
         return compute_field_fast(coeffs, root_data, N)
     else:
-        print(f"   → mpmath fallback path (separation {mp.nstr(min_sep, 3)} ≤ threshold {FLOAT64_SAFE_THRESHOLD})")
+        print(
+            f"   → mpmath fallback path (separation {mp.nstr(min_sep, 3)} ≤ threshold {FLOAT64_SAFE_THRESHOLD})")
         print("      This may be slow — pixel loop at full mpmath precision.")
         return compute_field_mpmath(coeffs, root_data, N)
 
-"""
-def compute_field(coeffs, root_data, N=300):
-    
-    #High-performance vectorized field computation.
-    #Uses the Logarithmic Derivative for Newton Flow to ensure stability
-    #and includes a safety check for 64-bit floating point limits.
-    
-    # =============================================
-    # 1. DYNAMIC SCALING
-    # =============================================
-    use_global_scaling = True
 
-    if use_global_scaling:
-        # Includes the influence radius (delta) in the view
-        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * 1.2
-    else:
-        # Focuses strictly on root coordinates
-        max_abs_root = max([abs(a) for a, _, _ in root_data] + [mpf(1)])
-        R = max_abs_root * 1.5
-
-    print(f"   → Plotting Radius R = {float(R):.2f}")
-
-    # =============================================
-    # 2. PREPARE VECTORIZED DATA & SAFETY CHECK
-    # =============================================
-    # Downscale high-precision mpmath objects to standard numpy complex floats
-    roots_f = np.array([complex(a) for a, m, delta in root_data], dtype=complex)
-    m_f = np.array([float(m) for a, m, delta in root_data], dtype=float)
-    deltas_f = np.array([float(delta) for a, m, delta in root_data], dtype=float)
-
-    # --- PHYSICAL HONESTY CHECK ---
-    # float64 has ~15-17 digits of relative precision. 
-    # If the gap between roots is smaller than this relative to R, they "blur".
-    if len(roots_f) > 1:
-        # Calculate min distance between any two roots
-        from scipy.spatial.distance import pdist
-        points = np.column_stack((roots_f.real, roots_f.imag))
-        # pdist returns 0 if coordinates are bit-identical in float64
-        min_sep = np.min(pdist(points)) if len(points) > 1 else float('inf')
-        
-        limit = 1e-15 * float(R)
-        if min_sep < limit or any(deltas_f < limit):
-            print("\n⚠️  NUMERICAL RESOLUTION WARNING:")
-            print(f"   Minimum root separation ({min_sep:.1e}) is near the 64-bit float limit.")
-            print("   The background field/flow may treat nearby roots as a single cluster.")
-
-    # Create the coordinate grid
-    xs = np.linspace(-float(R), float(R), N)
-    ys = np.linspace(-float(R), float(R), N)
-    X, Y = np.meshgrid(xs, ys)
-    Z = X + 1j*Y
-
-    # =============================================
-    # 3. DISTANCE FIELD (Broadcasting)
-    # =============================================
-    # diffs shape: (N, N, len(roots_f))
-    diffs = Z[..., np.newaxis] - roots_f
-    dist_matrix = np.abs(diffs) / deltas_f
-    
-    # Background field: log of the distance to the 'nearest' root influence
-    min_dist = np.min(dist_matrix, axis=-1)
-    dist = np.log10(min_dist + 1e-30)
-
-    # =============================================
-    # 4. NEWTON FLOW (Logarithmic Derivative)
-    # =============================================
-    # Instead of P(z)/P'(z), we use the stable identity:
-    # P'(z)/P(z) = sum( multiplicity_i / (z - root_i) )
-    inv_w = np.zeros_like(Z, dtype=complex)
-    for i in range(len(roots_f)):
-        denom = diffs[..., i]
-        # Safety floor for the denominator to avoid ZeroDivision
-        safe_denom = np.where(np.abs(denom) < 1e-30, 1e-30, denom)
-        inv_w += m_f[i] / safe_denom
-
-    with np.errstate(divide='ignore', invalid='ignore'):
-        # Newton direction w = -P/P' = -1 / (P'/P)
-        w = -1.0 / inv_w
-        mag = np.abs(w)
-        
-        # Normalize for streamplot (unit vectors)
-        flow_u = np.real(w) / np.where(mag > 0, mag, 1)
-        flow_v = np.imag(w) / np.where(mag > 0, mag, 1)
-
-    return xs, ys, dist, flow_u, flow_v
-"""
 # ========================= PLOT ========================= #
 
 def plot_field(xs, ys, dist, flow_u, flow_v, root_data, poly_str, var):
@@ -583,18 +438,19 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data, poly_str, var):
 
     # === DYNAMIC TITLES ===
     full_equation = f"{poly_str} = 0"
-    
+
     # 1. Window Title
-    window_title = (full_equation[:75] + '...') if len(full_equation) > 75 else full_equation
+    window_title = (
+        full_equation[:75] + '...') if len(full_equation) > 75 else full_equation
     plt.gcf().canvas.manager.set_window_title(window_title)
 
     # 2. Combined Plot Title (Using the correct variable x or z)
     wrapped_eq = textwrap.fill(full_equation, width=80)
     combined_title = (
-    "Global Newton Flow over δ-Normalized Root Influence Fields\n"
-    rf"$\mathbf{{P({var}):}}$ {wrapped_eq}"
-)
-    
+        "Global Newton Flow over δ-Normalized Root Influence Fields\n"
+        rf"$\mathbf{{P({var}):}}$ {wrapped_eq}"
+    )
+
     plt.title(combined_title, fontsize=11, pad=15)
 
     # Physical Remark
