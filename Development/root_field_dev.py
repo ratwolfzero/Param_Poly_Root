@@ -297,15 +297,13 @@ def compute_field(coeffs, root_data, N=200):
 """
 
 
-def compute_field(coeffs, root_data, N=400): # N can be higher now!
-    
-    
-    #Vectorized field computation using NumPy for speed, 
-    #while preserving mpmath-calculated root accuracy.
-    
-    # =============================================
-    # SCALING LOGIC (Preserved)
-    # =============================================
+def compute_field(coeffs, root_data, N=400):
+    """
+    Hybrid vectorized field computation.
+    - Distance field: broadcasting (fast, stable)
+    - Newton flow: logarithmic derivative identity (fast AND stable near high-multiplicity roots)
+      Avoids np.polyval catastrophic cancellation for polynomials like (x-1)^20.
+    """
     use_global_scaling = True
 
     if use_global_scaling:
@@ -318,48 +316,45 @@ def compute_field(coeffs, root_data, N=400): # N can be higher now!
 
     print(f"   → Using {mode_desc} with R = {float(R):.1f}")
 
-    # =============================================
-    # VECTORIZED COMPUTATION (Optimized)
-    # =============================================
-    # Convert mpmath data to standard numpy complex floats
-    roots_f = np.array([complex(a) for a, m, delta in root_data], dtype=complex)
-    deltas_f = np.array([float(delta) for a, m, delta in root_data], dtype=float)
-    coeffs_f = np.array([complex(c) for c in coeffs], dtype=complex)
-    
-    # Generate derivative coefficients for Newton Flow
-    dcoeffs_f = np.polyder(coeffs_f)
+    # Convert mpmath root data to float64
+    roots_f  = np.array([complex(a)     for a, m, delta in root_data], dtype=complex)
+    m_f      = np.array([float(m)       for a, m, delta in root_data], dtype=float)
+    deltas_f = np.array([float(delta)   for a, m, delta in root_data], dtype=float)
 
-    # Create the grid
     xs = np.linspace(-float(R), float(R), N)
     ys = np.linspace(-float(R), float(R), N)
     X, Y = np.meshgrid(xs, ys)
-    Z = X + 1j*Y
+    Z = X + 1j * Y  # shape (N, N)
 
-    # 1. Compute Distance Field
-    # We use broadcasting to find distance from every pixel to every root cluster
-    # Z[..., np.newaxis] creates a 3D array (N, N, len(roots))
-    dist_matrix = np.abs(Z[..., np.newaxis] - roots_f) / deltas_f
-    
-    # Take the minimum distance across the root-axis
+    # ── 1. Distance field ────────────────────────────────────────────────────
+    # diffs shape: (N, N, n_clusters)
+    diffs = Z[..., np.newaxis] - roots_f          # broadcasting
+    dist_matrix = np.abs(diffs) / deltas_f
     min_dist = np.min(dist_matrix, axis=-1)
     dist = np.log10(min_dist + 1e-30)
 
-    # 2. Compute Newton Flow
-    # Using numpy.polyval is significantly faster than python loops
-    p_val = np.polyval(coeffs_f, Z)
-    dp_val = np.polyval(dcoeffs_f, Z)
+    # ── 2. Newton flow via logarithmic derivative ────────────────────────────
+    # P'(z)/P(z) = Σ  m_i / (z - a_i)
+    # w = -P/P'  = -1 / Σ  m_i / (z - a_i)
+    #
+    # Safe denominator floor avoids 0/0 exactly on a root.
+    EPS = 1e-30
+    abs_diffs = np.abs(diffs)
+    safe_diffs = np.where(abs_diffs < EPS, EPS, diffs)   # shape (N, N, n_clusters)
 
-    # Handle division by zero or extremely small derivatives
+    log_deriv = np.sum(m_f / safe_diffs, axis=-1)         # Σ m_i/(z-a_i)
+
     with np.errstate(divide='ignore', invalid='ignore'):
-        w = -p_val / dp_val
+        w   = -1.0 / log_deriv
         mag = np.abs(w)
-        # Normalize vectors for the streamplot
-        flow_u = np.real(w) / np.where(mag > 0, mag, 1)
-        flow_v = np.imag(w) / np.where(mag > 0, mag, 1)
-        
-        # Zero out where derivative was zero
-        flow_u[mag == 0] = 0
-        flow_v[mag == 0] = 0
+        inv_mag = np.where(mag > 0, mag, 1.0)
+        flow_u = np.real(w) / inv_mag
+        flow_v = np.imag(w) / inv_mag
+
+        # Zero out degenerate pixels (exactly on a root, all directions pull equally)
+        bad = (mag == 0) | ~np.isfinite(mag)
+        flow_u[bad] = 0.0
+        flow_v[bad] = 0.0
 
     return xs, ys, dist, flow_u, flow_v
 
