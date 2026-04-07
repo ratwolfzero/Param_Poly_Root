@@ -4,7 +4,14 @@ from mpmath import mp, mpc, mpf, matrix, eig
 import textwrap
 
 # ========================= SETTINGS ========================= #
+# set arbitrary precision
 mp.dps = 600
+
+# Quality setting: controls both computation mode and resolution
+# 'low' = fast mode, low resolution (quick computation)
+# 'medium' = auto mode, medium resolution (balanced)
+# 'high' = auto mode, high resolution (detailed but slower)
+QUALITY = 'high'
 
 # ========================= INPUT ========================= #
 
@@ -147,8 +154,8 @@ def polynomial_to_string(coeffs, var='z', precision=6):
 
     return poly
 
-
 # ========================= POLYNOMIAL ========================= #
+
 
 def poly_eval(coeffs, x):
     p = mpc(0)
@@ -161,8 +168,8 @@ def poly_derivative(coeffs):
     n = len(coeffs) - 1
     return [coeffs[i] * (n - i) for i in range(len(coeffs)-1)]
 
-
 # ========================= COMPANION ROOT SOLVER ========================= #
+
 
 def build_companion(coeffs):
     a0 = coeffs[0]
@@ -184,8 +191,8 @@ def compute_roots(coeffs):
     roots = [mpc(v) for v in vals]
     return roots
 
-
 # ========================= CLUSTERING ========================= #
+
 
 def cluster_roots(roots, tol=mp.mpf('1e-20')):
     clusters = [[r] for r in roots]
@@ -210,8 +217,8 @@ def cluster_roots(roots, tol=mp.mpf('1e-20')):
 
     return clusters
 
-
 # ========================= DELTA ========================= #
+
 
 def compute_cluster_delta(cluster, clusters, lc):
     a = sum(cluster) / len(cluster)
@@ -233,8 +240,8 @@ def compute_cluster_delta(cluster, clusters, lc):
 
     return a, m, delta
 
-
 # ========================= FIELD ========================= #
+
 
 FLOAT64_SAFE_THRESHOLD = mpf('1e-13')
 
@@ -303,12 +310,12 @@ def compute_field_fast(coeffs, root_data, N=400):
     return xs, ys, dist, flow_u, flow_v
 
 
-def compute_field_mpmath(coeffs, root_data, N=400):
+def compute_field_mpmath(coeffs, root_data, N=200):
     """
     Mpmath pixel-loop field computation.
     Slow but correct at arbitrary precision — used automatically when cluster
     centroids are separated by less than FLOAT64_SAFE_THRESHOLD (~1e-13),
-    i.e. when float64 cannot resolve the root structure.
+    i.e. when float64 cannot resolve the root structure at this scale.
     """
     use_global_scaling = True
 
@@ -358,19 +365,23 @@ def compute_field_mpmath(coeffs, root_data, N=400):
 
             flow_u[j, i] = float(mp.re(w))
             flow_v[j, i] = float(mp.im(w))
+        
+        # Progress indicator
+        if i % (N // 10) == 0:
+            print(f"      Computing... {i * 100 // N}% complete")
+
+    print("      Computation complete")
 
     return xs, ys, dist, flow_u, flow_v
 
 
-def compute_field(coeffs, root_data, N=400):
+def compute_field(coeffs, root_data, N=800, mode='auto'):
     """
-    Dispatcher: routes to fast (float64) or precise (mpmath) implementation
-    based on the minimum pairwise separation between cluster centroids.
+    Dispatcher: routes to fast (float64) or precise (mpmath) implementation.
 
-    Single cluster: float64 is trivially safe (nothing to misresolve).
-    Fast path:      separation > FLOAT64_SAFE_THRESHOLD  (~1e-13)
-    Fallback:       separation ≤ FLOAT64_SAFE_THRESHOLD
-                    (float64 cannot resolve root structure at this scale)
+    mode='auto'   — float64 unless centroid separation ≤ FLOAT64_SAFE_THRESHOLD
+    mode='fast'   — always float64 vectorized (may lose precision for close roots)
+    mode='mpmath' — always full mpmath pixel loop (slow, arbitrary precision)
     """
     use_global_scaling = True
 
@@ -384,6 +395,17 @@ def compute_field(coeffs, root_data, N=400):
 
     print(f"   → Using {mode_desc} with R = {float(R):.1f}")
 
+    if mode == 'fast':
+        print("   → Forced fast (float64 vectorized)")
+        return compute_field_fast(coeffs, root_data, N)
+
+    if mode == 'mpmath':
+        print("   → Forced mpmath (arbitrary precision, slow)")
+        N_mpmath = min(N, 200)  # Cap at 200 for reasonable computation time
+        print(f"      Using N={N_mpmath} for mpmath computation")
+        return compute_field_mpmath(coeffs, root_data, N_mpmath)
+
+    # mode == 'auto'
     if len(root_data) == 1:
         print("   → Single cluster — no centroid separation to measure")
         print("   → float64 path (fast vectorized)")
@@ -401,8 +423,8 @@ def compute_field(coeffs, root_data, N=400):
         print("      This may be slow — pixel loop at full mpmath precision.")
         return compute_field_mpmath(coeffs, root_data, N)
 
-
 # ========================= PLOT ========================= #
+
 
 def plot_field(xs, ys, dist, flow_u, flow_v, root_data, poly_str, var):
     """
@@ -467,8 +489,8 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data, poly_str, var):
     plt.tight_layout()
     plt.show()
 
-
 # ========================= MAIN ========================= #
+
 
 def main():
     coeffs = get_coefficients_from_user()
@@ -493,8 +515,27 @@ def main():
     for a, m, delta in root_data:
         print(f"a={mp.nstr(a, 6)}, m={m}, δ={mp.nstr(delta, 6)}")
 
+    # Set computation parameters based on quality setting
+    if QUALITY == 'low':
+        field_mode = 'fast'
+        grid_resolution = 200
+    elif QUALITY == 'medium':
+        field_mode = 'auto'
+        grid_resolution = 400
+    elif QUALITY == 'high':
+        field_mode = 'auto'
+        grid_resolution = 800
+    else:
+        # Default to high
+        field_mode = 'auto'
+        grid_resolution = 800
+
+    print(f"\nUsing quality setting: {QUALITY}")
+    print(f"Field computation mode: {field_mode}")
+    print(f"Grid resolution: {grid_resolution}x{grid_resolution}")
+
     print("\nComputing field layout...")
-    xs, ys, dist, fu, fv = compute_field(coeffs, root_data)
+    xs, ys, dist, fu, fv = compute_field(coeffs, root_data, mode=field_mode, N=grid_resolution)
     plot_field(xs, ys, dist, fu, fv, root_data, poly_str, var)
 
 
