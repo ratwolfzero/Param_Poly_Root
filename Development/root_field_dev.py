@@ -11,7 +11,10 @@ mp.dps = 600
 # 'low' = fast mode, low resolution (quick computation)
 # 'medium' = auto mode, medium resolution (balanced)
 # 'high' = auto mode, high resolution (detailed but slower)
-QUALITY = 'high'
+QUALITY = 'medium'
+
+# Scaling mode: True = global scaling (includes largest δ), False = root-focused scaling
+USE_GLOBAL_SCALING = True
 
 # ========================= INPUT ========================= #
 
@@ -267,7 +270,7 @@ def compute_field_fast(coeffs, root_data, N=400):
     Uses logarithmic derivative identity for Newton flow — avoids catastrophic
     cancellation near high-multiplicity roots.
     """
-    use_global_scaling = True
+    use_global_scaling = USE_GLOBAL_SCALING
 
     if use_global_scaling:
         R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * 1.2
@@ -317,7 +320,7 @@ def compute_field_mpmath(coeffs, root_data, N=200):
     centroids are separated by less than FLOAT64_SAFE_THRESHOLD (~1e-13),
     i.e. when float64 cannot resolve the root structure at this scale.
     """
-    use_global_scaling = True
+    use_global_scaling = USE_GLOBAL_SCALING
 
     if use_global_scaling:
         R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * 1.2
