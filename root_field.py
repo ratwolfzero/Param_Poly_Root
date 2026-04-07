@@ -147,8 +147,8 @@ def polynomial_to_string(coeffs, var='z', precision=6):
 
     return poly
 
-
 # ========================= POLYNOMIAL ========================= #
+
 
 def poly_eval(coeffs, x):
     p = mpc(0)
@@ -161,8 +161,8 @@ def poly_derivative(coeffs):
     n = len(coeffs) - 1
     return [coeffs[i] * (n - i) for i in range(len(coeffs)-1)]
 
-
 # ========================= COMPANION ROOT SOLVER ========================= #
+
 
 def build_companion(coeffs):
     a0 = coeffs[0]
@@ -184,8 +184,8 @@ def compute_roots(coeffs):
     roots = [mpc(v) for v in vals]
     return roots
 
-
 # ========================= CLUSTERING ========================= #
+
 
 def cluster_roots(roots, tol=mp.mpf('1e-20')):
     clusters = [[r] for r in roots]
@@ -210,8 +210,8 @@ def cluster_roots(roots, tol=mp.mpf('1e-20')):
 
     return clusters
 
-
 # ========================= DELTA ========================= #
+
 
 def compute_cluster_delta(cluster, clusters, lc):
     a = sum(cluster) / len(cluster)
@@ -233,8 +233,8 @@ def compute_cluster_delta(cluster, clusters, lc):
 
     return a, m, delta
 
-
 # ========================= FIELD ========================= #
+
 
 FLOAT64_SAFE_THRESHOLD = mpf('1e-13')
 
@@ -401,8 +401,8 @@ def compute_field(coeffs, root_data, N=400):
         print("      This may be slow — pixel loop at full mpmath precision.")
         return compute_field_mpmath(coeffs, root_data, N)
 
-
 # ========================= PLOT ========================= #
+
 
 def plot_field(xs, ys, dist, flow_u, flow_v, root_data, poly_str, var):
     """
@@ -467,8 +467,8 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data, poly_str, var):
     plt.tight_layout()
     plt.show()
 
-
 # ========================= MAIN ========================= #
+
 
 def main():
     coeffs = get_coefficients_from_user()
