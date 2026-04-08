@@ -372,7 +372,7 @@ def compute_field_mpmath(coeffs, root_data, N=200):
 
             flow_u[j, i] = float(mp.re(w))
             flow_v[j, i] = float(mp.im(w))
-        
+
         # Progress indicator
         if i % (N // 10) == 0:
             print(f"      Computing... {i * 100 // N}% complete")
@@ -527,17 +527,19 @@ def main():
     # Use settings directly
     field_mode = MODE
     grid_resolution = GRID_RESOLUTION
-    
+
     # Cap mpmath resolution for performance
     if field_mode == 'mpmath':
         grid_resolution = min(grid_resolution, 200)
 
     print(f"\nUsing computation mode: {field_mode}")
     print(f"Grid resolution: {grid_resolution}x{grid_resolution}")
-    print(f"Scaling mode: {'global' if USE_GLOBAL_SCALING else 'root-focused'}")
+    print(
+        f"Scaling mode: {'global' if USE_GLOBAL_SCALING else 'root-focused'}")
 
     print("\nComputing field layout...")
-    xs, ys, dist, fu, fv = compute_field(coeffs, root_data, mode=field_mode, N=grid_resolution)
+    xs, ys, dist, fu, fv = compute_field(
+        coeffs, root_data, mode=field_mode, N=grid_resolution)
     plot_field(xs, ys, dist, fu, fv, root_data, poly_str, var)
 
 
