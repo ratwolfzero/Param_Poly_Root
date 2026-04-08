@@ -429,6 +429,7 @@ def compute_field(coeffs, root_data, N=800, mode='auto'):
             f"   → mpmath fallback path (separation {mp.nstr(min_sep, 3)} ≤ threshold {FLOAT64_SAFE_THRESHOLD})")
         print("      This may be slow — pixel loop at full mpmath precision.")
         N_mpmath = min(N, 200)  # Cap at 200 for reasonable computation time
+        print(f"      Using grid resolution: {N_mpmath}x{N_mpmath}")
         return compute_field_mpmath(coeffs, root_data, N_mpmath)
 
 # ========================= PLOT ========================= #
