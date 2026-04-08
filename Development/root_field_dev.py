@@ -9,7 +9,7 @@ mp.dps = 600
 
 # Computation mode: 'auto', 'fast', or 'mpmath'
 # - 'fast': Uses float64 with GRID_RESOLUTION
-# - 'mpmath': Uses arbitrary precision (dps 600) with grid resolution capped at 200
+# - 'mpmath': Uses arbitrary precision (mp.dps) with grid resolution capped at 200
 # - 'auto': Automatically chooses fast or mpmath; uses GRID_RESOLUTION if fast, 200 if mpmath
 MODE = 'auto'
 
