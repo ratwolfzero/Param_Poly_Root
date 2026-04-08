@@ -8,9 +8,13 @@ import textwrap
 mp.dps = 600
 
 # Computation mode: 'auto', 'fast', or 'mpmath'
+# - 'fast': Uses float64 with GRID_RESOLUTION
+# - 'mpmath': Uses arbitrary precision (dps 600) with grid resolution capped at 200
+# - 'auto': Automatically chooses fast or mpmath; uses GRID_RESOLUTION if fast, 200 if mpmath
 MODE = 'auto'
 
-# Grid resolution: number of points per axis (applies to 'auto' and 'fast' modes; 'mpmath' always uses 200)
+# Grid resolution: number of points per axis for 'fast' and 'auto' modes
+# (mpmath always uses maximum 200 for performance)
 GRID_RESOLUTION = 800
 
 # Scaling mode: True = global scaling (includes largest δ), False = root-focused scaling
@@ -424,7 +428,8 @@ def compute_field(coeffs, root_data, N=800, mode='auto'):
         print(
             f"   → mpmath fallback path (separation {mp.nstr(min_sep, 3)} ≤ threshold {FLOAT64_SAFE_THRESHOLD})")
         print("      This may be slow — pixel loop at full mpmath precision.")
-        return compute_field_mpmath(coeffs, root_data, N)
+        N_mpmath = min(N, 200)  # Cap at 200 for reasonable computation time
+        return compute_field_mpmath(coeffs, root_data, N_mpmath)
 
 # ========================= PLOT ========================= #
 
