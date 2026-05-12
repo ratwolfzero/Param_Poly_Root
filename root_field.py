@@ -447,6 +447,9 @@ def cluster_roots(roots, tol=CLUSTER_TOL):
                 break
         if not merged:
             break
+    # Sort clusters by their centroids for consistent output
+    clusters.sort(key=lambda c: (float(mp.re(sum(c) / len(c))),
+                                 float(mp.im(sum(c) / len(c)))))
     return clusters
 
 # ========================= DELTA ========================= #
@@ -782,6 +785,9 @@ def refine_bad_roots(coeffs, root_data, residuals, tiers=('bad', 'warn')):
             cluster, rebuilt_clusters, lc
         )
         new_root_data.append((new_a, new_m, new_delta))
+
+    # Sort refined root_data by centroid for consistent output
+    new_root_data.sort(key=lambda t: (float(mp.re(t[0])), float(mp.im(t[0]))))
 
     new_residuals = compute_residuals(coeffs, new_root_data)
     return new_root_data, new_residuals
