@@ -25,7 +25,6 @@ python3 generate_coeffs_txt.py --output my_coeffs.txt
 python3 generate_coeffs_txt.py --coeffs "1 -100 4875 ..."
 ```
 
-
 ## 2. Use `root_field.py` with a coefficients file
 
 This is the safest way to pass long coefficient lists without shell truncation problems:
@@ -39,7 +38,6 @@ If you use a different file name:
 ```bash
 python3 root_field.py --coeffs-file my_coeffs.txt
 ```
-
 
 ## 3. Use `root_field.py` with standard input
 
@@ -56,7 +54,6 @@ cat coeffs.txt | python3 root_field.py
 ```
 
 This reads coefficients from stdin and avoids placing a long list directly in the command line.
-
 
 ## 4. Advanced options for precision and clustering
 
@@ -87,7 +84,6 @@ python3 root_field.py --coeffs-file coeffs.txt --dps 800 --cluster-tol 1e-22
 ```
 
 The script provides diagnostic hints if many `m=1` clusters are detected, suggesting parameter adjustments.
-
 
 ## 5. Notes
 
