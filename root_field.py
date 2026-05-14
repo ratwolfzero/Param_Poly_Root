@@ -113,6 +113,15 @@ GRID_RESOLUTION = 800
 USE_GLOBAL_SCALING = True
 
 # ------------------------------------------------------------------
+# MAXIMUM SAFE PLOT RADIUS
+# ------------------------------------------------------------------
+# Used to avoid infinite or overflowed axis limits when a δ value is
+# astronomically large.  If global scaling would produce a non-finite
+# or impractically huge plot radius, the code falls back to root-focused
+# scaling instead.
+MAX_PLOT_RADIUS = mpf('1e8')
+
+# ------------------------------------------------------------------
 # RESIDUAL WARNING THRESHOLDS
 # ------------------------------------------------------------------
 # The scale-invariant residual  rel = |P(a)| · δᵐ  measures how far
@@ -895,10 +904,17 @@ def _field_radius(root_data):
     Return the half-width of the plotting window for the distance field.
 
     If global scaling is enabled, include the largest δ-disk radius.
-    Otherwise use root-centric scaling based on the cluster centroids.
+    If that radius is non-finite or impractically large, fall back to
+    root-focused scaling to keep plotting stable.
     """
     if USE_GLOBAL_SCALING:
-        return max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * mpf('1.05')
+        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * mpf('1.05')
+        if not mp.isfinite(R) or float(R) == float('inf') or R > MAX_PLOT_RADIUS:
+            fallback = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * mpf('1.5')
+            if not mp.isfinite(fallback) or float(fallback) == float('inf') or fallback > MAX_PLOT_RADIUS:
+                return MAX_PLOT_RADIUS
+            return fallback
+        return R
     return max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * mpf('1.5')
 
 
@@ -1066,11 +1082,14 @@ def compute_field(coeffs, root_data, N=800, mode='auto'):
     Same as compute_field_fast / compute_field_mpmath.
     """
     if USE_GLOBAL_SCALING:
-        R = max([abs(a) + delta for a, _, delta in root_data] +
-                [mpf(1)]) * mpf('1.05')
+        raw_R = max([abs(a) + delta for a, _, delta in root_data] +
+                    [mpf(1)]) * mpf('1.05')
+        R = _field_radius(root_data)
         mode_desc = "GLOBAL SCALING"
+        if R != raw_R:
+            mode_desc = "ROOT-FOCUSED SCALING (fallback)"
     else:
-        R = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * mpf('1.5')
+        R = _field_radius(root_data)
         mode_desc = "ROOT-FOCUSED SCALING"
 
     print(f" → Using {mode_desc} with R = {float(R):.1f}")
