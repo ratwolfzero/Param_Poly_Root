@@ -1044,8 +1044,12 @@ def compute_field(coeffs, root_data, N=800, mode='auto'):
     -------
     Same as compute_field_fast / compute_field_mpmath.
     """
-    R = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * 1.5
-    mode_desc = "ROOT-FOCUSED SCALING"
+    if USE_GLOBAL_SCALING:
+        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * mpf('1.05')
+        mode_desc = "GLOBAL SCALING"
+    else:
+        R = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * mpf('1.5')
+        mode_desc = "ROOT-FOCUSED SCALING"
 
     print(f" → Using {mode_desc} with R = {float(R):.1f}")
 
