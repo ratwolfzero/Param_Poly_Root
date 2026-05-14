@@ -174,13 +174,18 @@ def parse_coefficients_strict(text):
         raise ValueError("Empty input.")
     for token in tokens:
         original = token
-        token = token.replace('I', 'i').replace('i', 'j')
-        token = token.replace(' ', '')
+        # Normalize: replace I with i, then i with j (mpmath convention)
+        token = token.replace('I', 'i').replace('i', 'j').replace(' ', '')
         try:
-            z = mpc(token)
-            coeffs.append(z)
-        except Exception:
-            raise ValueError(f"Invalid coefficient: '{original}'")
+            # Try direct float/complex parsing: convert j to 1j for Python's complex()
+            z = complex(token)
+            coeffs.append(mpc(z.real, z.imag))
+        except ValueError:
+            # Fallback: try as pure real (in case it's a scientific notation mpmath doesn't handle)
+            try:
+                coeffs.append(mpc(mpf(token)))
+            except Exception:
+                raise ValueError(f"Invalid coefficient: '{original}'")
     while len(coeffs) > 1 and coeffs[0] == 0:
         coeffs.pop(0)
     return coeffs
