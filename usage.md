@@ -25,7 +25,8 @@ In `faxtored_coeffs_txt.py`, you can use expressions such as:
 
 ```python
 x = sp.symbols('x')
-factored = (x - 1)**40 * (x - 2)**30 * (x - 3)**20
+factored = (x - 5)**10 * (x**2 - 2*x + 2)**25
+# factored = (x - 1)**40 * (x - 2)**30 * (x - 3)**20
 ```
 
 Then run the script to generate the coefficients file.
