@@ -1210,8 +1210,8 @@ def main():
     parser.add_argument('--dps', type=int, default=600,
                         help='Arbitrary-precision decimal places (default: 600). '
                              'Increase for higher multiplicities or ill-conditioned polynomials.')
-    parser.add_argument('--cluster-tol', type=str, default='1e-29',
-                        help='Clustering tolerance for merging roots (default: 1e-29). '
+    parser.add_argument('--cluster-tol', type=str, default='1e-22',
+                        help='Clustering tolerance for merging roots (default: 1e-22). '
                              'Increase if many m=1 clusters should be higher multiplicities.')
     args = parser.parse_args()
 
@@ -1221,9 +1221,10 @@ def main():
     # Apply CLI overrides for precision and clustering
     if args.dps != 600:
         mp.dps = args.dps
-    if args.cluster_tol != '1e-29':
+
+    if args.cluster_tol != '1e-22':
+        global CLUSTER_TOL, FLOAT64_SAFE_REL_THRESHOLD
         CLUSTER_TOL = mpf(args.cluster_tol)
-        # Recompute dependent thresholds
         FLOAT64_SAFE_REL_THRESHOLD = CLUSTER_TOL * mpf('1e7')
 
     if args.coeffs:
