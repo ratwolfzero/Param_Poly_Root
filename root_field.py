@@ -903,10 +903,7 @@ def compute_field_fast(coeffs, root_data, N=400):
     flow_u   : 2-D array  x-component of unit Newton flow
     flow_v   : 2-D array  y-component of unit Newton flow
     """
-    if USE_GLOBAL_SCALING:
-        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * 1.2
-    else:
-        R = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * 1.5
+    R = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * 1.5
 
     roots_f = np.array([complex(a)
                        for a, m, delta in root_data], dtype=complex)
@@ -959,10 +956,7 @@ def compute_field_mpmath(coeffs, root_data, N=200):
 
     Parameters and return value are identical to compute_field_fast.
     """
-    if USE_GLOBAL_SCALING:
-        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * 1.2
-    else:
-        R = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * 1.5
+    R = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * 1.5
 
     xs = np.linspace(-float(R), float(R), N)
     ys = np.linspace(-float(R), float(R), N)
@@ -1030,12 +1024,8 @@ def compute_field(coeffs, root_data, N=800, mode='auto'):
     -------
     Same as compute_field_fast / compute_field_mpmath.
     """
-    if USE_GLOBAL_SCALING:
-        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * 1.2
-        mode_desc = "GLOBAL SCALING (includes largest δ)"
-    else:
-        R = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * 1.5
-        mode_desc = "ROOT-FOCUSED SCALING"
+    R = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * 1.5
+    mode_desc = "ROOT-FOCUSED SCALING"
 
     print(f" → Using {mode_desc} with R = {float(R):.1f}")
 
