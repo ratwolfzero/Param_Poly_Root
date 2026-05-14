@@ -888,6 +888,18 @@ def _min_centroid_separation(root_data):
     return min_sep
 
 
+def _field_radius(root_data):
+    """
+    Return the half-width of the plotting window for the distance field.
+
+    If global scaling is enabled, include the largest δ-disk radius.
+    Otherwise use root-centric scaling based on the cluster centroids.
+    """
+    if USE_GLOBAL_SCALING:
+        return max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * mpf('1.05')
+    return max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * mpf('1.5')
+
+
 def compute_field_fast(coeffs, root_data, N=400):
     """
     Compute the δ-normalized distance field and Newton flow using
@@ -923,7 +935,7 @@ def compute_field_fast(coeffs, root_data, N=400):
     flow_u   : 2-D array  x-component of unit Newton flow
     flow_v   : 2-D array  y-component of unit Newton flow
     """
-    R = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * 1.5
+    R = _field_radius(root_data)
 
     roots_f = np.array([complex(a)
                        for a, m, delta in root_data], dtype=complex)
@@ -976,7 +988,7 @@ def compute_field_mpmath(coeffs, root_data, N=200):
 
     Parameters and return value are identical to compute_field_fast.
     """
-    R = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * 1.5
+    R = _field_radius(root_data)
 
     xs = np.linspace(-float(R), float(R), N)
     ys = np.linspace(-float(R), float(R), N)
