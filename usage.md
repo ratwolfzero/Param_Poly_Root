@@ -76,6 +76,8 @@ Adjust how roots are merged into clusters. Increase if many `m=1` clusters shoul
 python3 root_field.py --coeffs-file coeffs.txt --cluster-tol 1e-22
 ```
 
+**Example:** The default example polynomial (degree 60) shows 51 clusters with default tolerance, but correctly merges to 3 clusters with `--cluster-tol 1e-22`.
+
 **Important:** `dps` and `cluster-tol` are interdependent. The noise floor is ≈ `10^(-dps / m_max)`. `cluster-tol` must stay above this floor, or true multiple roots will split artificially.
 
 ### Combined usage
