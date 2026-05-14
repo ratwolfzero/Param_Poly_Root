@@ -58,14 +58,43 @@ cat coeffs.txt | python3 root_field.py
 This reads coefficients from stdin and avoids placing a long list directly in the command line.
 
 
-## 4. Notes
+## 4. Advanced options for precision and clustering
+
+### Precision control (`--dps`)
+
+Increase arbitrary-precision decimal places for higher multiplicities or ill-conditioned polynomials:
+
+```bash
+python3 root_field.py --coeffs-file coeffs.txt --dps 800
+```
+
+### Clustering tolerance (`--cluster-tol`)
+
+Adjust how roots are merged into clusters. Increase if many `m=1` clusters should be higher multiplicities:
+
+```bash
+python3 root_field.py --coeffs-file coeffs.txt --cluster-tol 1e-22
+```
+
+**Important:** `dps` and `cluster-tol` are interdependent. The noise floor is ≈ `10^(-dps / m_max)`. `cluster-tol` must stay above this floor, or true multiple roots will split artificially.
+
+### Combined usage
+
+```bash
+python3 root_field.py --coeffs-file coeffs.txt --dps 800 --cluster-tol 1e-22
+```
+
+The script provides diagnostic hints if many `m=1` clusters are detected, suggesting parameter adjustments.
+
+
+## 5. Notes
 
 - `coeffs.txt` should contain a single line with coefficients separated by spaces or commas.
 - Coefficients must be provided in descending degree order, starting with the coefficient of `x^n`.
 - The script supports real and complex coefficients.
 - Use `--coeffs-file` when large integers or long coefficient lists are involved.
 
-## 5. Example workflow
+## 6. Example workflow
 
 ```bash
 cd /Users/ralf/Projects/Python/Param_Poly_Root

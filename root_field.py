@@ -623,7 +623,7 @@ def compute_residuals(coeffs, root_data):
     return results
 
 
-def format_root_report(root_data, residuals):
+def format_root_report(root_data, residuals, dps=None, cluster_tol=None):
     """
     Print the clustered-root table with full residual diagnostics.
 
@@ -638,10 +638,15 @@ def format_root_report(root_data, residuals):
     status     — 'ok' / '~' (warn) / '!' (bad)
 
     A ↳ note is printed below any non-ok row.
-    A summary block is printed after the table:
-        ✓  — all roots ok
-        ~  — at least one marginal root
-        ⚠  — at least one bad root (with remediation advice)
+    A summary block is printed after the table with a diagnostic suggestion
+    if many clusters are detected (suggesting higher multiplicities).
+
+    Parameters
+    ----------
+    root_data   : list of (mpc, int, mpf)
+    residuals   : list of dict
+    dps         : int or None    current mp.dps for suggestions
+    cluster_tol : mpf or None    current CLUSTER_TOL for suggestions
     """
     TIER_LABEL = {'ok': 'ok', 'warn': '~', 'bad': '!'}
 
@@ -695,6 +700,18 @@ def format_root_report(root_data, residuals):
     total_roots = sum(m for _, m, _ in root_data)
     print(f"  Total roots (sum of multiplicities): {total_roots}")
     print(f"  Total clusters displayed         : {len(root_data)}")
+
+    # Diagnostic suggestion for parameter tuning
+    num_clusters = len(root_data)
+    num_m1_clusters = sum(1 for _, m, _ in root_data if m == 1)
+    if dps is not None and cluster_tol is not None and num_m1_clusters > total_roots / 2:
+        noise_floor = mpf(10) ** (-(dps / num_m1_clusters))
+        suggested_tol = noise_floor * mpf(10)  # 10× above noise floor for safety
+        print(f"\n  💡 DIAGNOSTIC HINT:")
+        print(f"     Detected {num_clusters} clusters with mostly m=1.")
+        print(f"     If higher multiplicities are expected, try:")
+        print(f"       python3 root_field.py --cluster-tol {mp.nstr(suggested_tol, 3)} ...")
+        print(f"     Or increase precision with:  --dps {dps + 200}")
     print()
 
     if any_bad:
@@ -1190,10 +1207,24 @@ def main():
     )
     parser.add_argument('--coeffs', help='Space-separated coefficient string.')
     parser.add_argument('--coeffs-file', help='Path to a coefficient text file.')
+    parser.add_argument('--dps', type=int, default=600,
+                        help='Arbitrary-precision decimal places (default: 600). '
+                             'Increase for higher multiplicities or ill-conditioned polynomials.')
+    parser.add_argument('--cluster-tol', type=str, default='1e-29',
+                        help='Clustering tolerance for merging roots (default: 1e-29). '
+                             'Increase if many m=1 clusters should be higher multiplicities.')
     args = parser.parse_args()
 
     if args.coeffs and args.coeffs_file:
         parser.error('Use either --coeffs or --coeffs-file, not both.')
+
+    # Apply CLI overrides for precision and clustering
+    if args.dps != 600:
+        mp.dps = args.dps
+    if args.cluster_tol != '1e-29':
+        CLUSTER_TOL = mpf(args.cluster_tol)
+        # Recompute dependent thresholds
+        FLOAT64_SAFE_REL_THRESHOLD = CLUSTER_TOL * mpf('1e7')
 
     if args.coeffs:
         coeffs = parse_coefficients_strict(args.coeffs)
@@ -1223,7 +1254,7 @@ def main():
     # Evaluates |P(a)| and |P(a)|·δᵐ for every centroid and assigns
     # a reliability tier ('ok', 'warn', 'bad').
     residuals = compute_residuals(coeffs, root_data)
-    format_root_report(root_data, residuals)
+    format_root_report(root_data, residuals, dps=mp.dps, cluster_tol=CLUSTER_TOL)
 
     # Step 6: optional Newton / Halley refinement.
     # Triggered automatically whenever at least one root is non-ok.
@@ -1237,7 +1268,7 @@ def main():
             coeffs, root_data, residuals, tiers=('bad', 'warn'))
         print()
         print("  Post-refinement diagnostics:")
-        format_root_report(root_data, residuals)
+        format_root_report(root_data, residuals, dps=mp.dps, cluster_tol=CLUSTER_TOL)
 
     # Steps 7–8: field computation and plot.
     print(f"Using computation mode : {MODE}")
