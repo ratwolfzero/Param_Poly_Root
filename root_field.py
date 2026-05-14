@@ -164,15 +164,9 @@ def parse_coefficients_strict(text):
         original = token
         token = token.replace('I', 'i').replace('i', 'j')
         token = token.replace(' ', '')
-        if token in ('j', '+j'):
-            coeffs.append(mpc(0, 1))
-            continue
-        elif token == '-j':
-            coeffs.append(mpc(0, -1))
-            continue
         try:
-            z = complex(token)
-            coeffs.append(mpc(mpf(z.real), mpf(z.imag)))
+            z = mpc(token)
+            coeffs.append(z)
         except Exception:
             raise ValueError(f"Invalid coefficient: '{original}'")
     while len(coeffs) > 1 and coeffs[0] == 0:
