@@ -706,11 +706,13 @@ def format_root_report(root_data, residuals, dps=None, cluster_tol=None):
     num_m1_clusters = sum(1 for _, m, _ in root_data if m == 1)
     if dps is not None and cluster_tol is not None and num_m1_clusters > total_roots / 2:
         noise_floor = mpf(10) ** (-(dps / num_m1_clusters))
-        suggested_tol = noise_floor * mpf(10)  # 10× above noise floor for safety
+        # 10× above noise floor for safety
+        suggested_tol = noise_floor * mpf(10)
         print(f"\n  💡 DIAGNOSTIC HINT:")
         print(f"     Detected {num_clusters} clusters with mostly m=1.")
         print(f"     If higher multiplicities are expected, try:")
-        print(f"       python3 root_field.py --cluster-tol {mp.nstr(suggested_tol, 3)} ...")
+        print(
+            f"       python3 root_field.py --cluster-tol {mp.nstr(suggested_tol, 3)} ...")
         print(f"     Or increase precision with:  --dps {dps + 200}")
     print()
 
@@ -1057,7 +1059,8 @@ def compute_field(coeffs, root_data, N=800, mode='auto'):
     Same as compute_field_fast / compute_field_mpmath.
     """
     if USE_GLOBAL_SCALING:
-        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * mpf('1.05')
+        R = max([abs(a) + delta for a, _, delta in root_data] +
+                [mpf(1)]) * mpf('1.05')
         mode_desc = "GLOBAL SCALING"
     else:
         R = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * mpf('1.5')
@@ -1222,7 +1225,8 @@ def main():
         description="Compute root fields for a univariate polynomial."
     )
     parser.add_argument('--coeffs', help='Space-separated coefficient string.')
-    parser.add_argument('--coeffs-file', help='Path to a coefficient text file.')
+    parser.add_argument(
+        '--coeffs-file', help='Path to a coefficient text file.')
     parser.add_argument('--dps', type=int, default=600,
                         help='Arbitrary-precision decimal places (default: 600). '
                              'Increase for higher multiplicities or ill-conditioned polynomials.')
@@ -1271,7 +1275,8 @@ def main():
     # Evaluates |P(a)| and |P(a)|·δᵐ for every centroid and assigns
     # a reliability tier ('ok', 'warn', 'bad').
     residuals = compute_residuals(coeffs, root_data)
-    format_root_report(root_data, residuals, dps=mp.dps, cluster_tol=CLUSTER_TOL)
+    format_root_report(root_data, residuals, dps=mp.dps,
+                       cluster_tol=CLUSTER_TOL)
 
     # Step 6: optional Newton / Halley refinement.
     # Triggered automatically whenever at least one root is non-ok.
@@ -1285,7 +1290,8 @@ def main():
             coeffs, root_data, residuals, tiers=('bad', 'warn'))
         print()
         print("  Post-refinement diagnostics:")
-        format_root_report(root_data, residuals, dps=mp.dps, cluster_tol=CLUSTER_TOL)
+        format_root_report(root_data, residuals, dps=mp.dps,
+                           cluster_tol=CLUSTER_TOL)
 
     # Steps 7–8: field computation and plot.
     print(f"Using computation mode : {MODE}")
