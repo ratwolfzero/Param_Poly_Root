@@ -1,0 +1,76 @@
+# Usage Guide
+
+This guide explains how to use `generate_coeffs_txt.py` and `root_field.py` with safe coefficient input.
+
+## 1. Generate a coefficients file
+
+To create a file named `coeffs.txt` with default example coefficients:
+
+```bash
+cd /Users/ralf/Projects/Python/Param_Poly_Root
+python3 generate_coeffs_txt.py
+```
+
+This writes the coefficient list into `coeffs.txt` in the current folder.
+
+### Optional: use a custom output path
+
+```bash
+python3 generate_coeffs_txt.py --output my_coeffs.txt
+```
+
+### Optional: use custom coefficients directly
+
+```bash
+python3 generate_coeffs_txt.py --coeffs "1 -100 4875 ..."
+```
+
+
+## 2. Use `root_field.py` with a coefficients file
+
+This is the safest way to pass long coefficient lists without shell truncation problems:
+
+```bash
+python3 root_field.py --coeffs-file coeffs.txt
+```
+
+If you use a different file name:
+
+```bash
+python3 root_field.py --coeffs-file my_coeffs.txt
+```
+
+
+## 3. Use `root_field.py` with standard input
+
+If you prefer to pipe coefficients directly into the script, use standard input:
+
+```bash
+echo "1 -100 4875 -154550 ..." | python3 root_field.py
+```
+
+or:
+
+```bash
+cat coeffs.txt | python3 root_field.py
+```
+
+This reads coefficients from stdin and avoids placing a long list directly in the command line.
+
+
+## 4. Notes
+
+- `coeffs.txt` should contain a single line with coefficients separated by spaces or commas.
+- Coefficients must be provided in descending degree order, starting with the coefficient of `x^n`.
+- The script supports real and complex coefficients.
+- Use `--coeffs-file` when large integers or long coefficient lists are involved.
+
+## 5. Example workflow
+
+```bash
+cd /Users/ralf/Projects/Python/Param_Poly_Root
+python3 generate_coeffs_txt.py
+python3 root_field.py --coeffs-file coeffs.txt
+```
+
+This workflow keeps the coefficient input safe and reproducible.
