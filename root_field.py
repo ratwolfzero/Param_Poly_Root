@@ -252,6 +252,42 @@ def format_complex(z, precision=6):
     return f"({re_str}{im_part})"
 
 
+def format_root_location(z, precision=6, width=28):
+    """
+    Format a cluster centroid in a compact fixed-width form.
+    """
+    re = mp.re(z)
+    im = mp.im(z)
+    if mp.almosteq(im, 0):
+        s = format_real(re, precision)
+    elif mp.almosteq(re, 0):
+        if mp.almosteq(abs(im), 1):
+            s = "i" if im > 0 else "-i"
+        else:
+            s = f"{format_real(im, precision)}i"
+    else:
+        re_str = format_real(re, precision)
+        im_str = format_real(abs(im), precision)
+        sign = "+" if im > 0 else "-"
+        if mp.almosteq(abs(im), 1):
+            im_part = "i"
+        else:
+            im_part = f"{im_str}i"
+        s = f"{re_str}{sign}{im_part}"
+    if len(s) > width:
+        s = s[:width - 3] + "..."
+    return s
+
+
+def format_value(value, precision=4):
+    """
+    Format a floating-point value with a consistent significant-digit count.
+    """
+    if value == mp.inf:
+        return "inf"
+    return mp.nstr(value, precision, strip_zeros=True)
+
+
 def polynomial_to_string(coeffs, var='z', precision=6):
     """
     Convert a coefficient list to a human-readable polynomial string.
@@ -603,7 +639,7 @@ def format_root_report(root_data, residuals):
     """
     TIER_LABEL = {'ok': 'ok', 'warn': '~', 'bad': '!'}
 
-    col_a = 30
+    col_a = 28
     col_m = 3
     col_d = 14
     col_abs = 14
@@ -616,16 +652,21 @@ def format_root_report(root_data, residuals):
     print("\nClustered roots with residual diagnostics:")
     print(header)
     print("  " + "-" * (len(header) - 2))
+    print("  Legend: ok = trusted, ~ = marginal, ! = unreliable")
+    print("  " + "-" * (len(header) - 2))
 
     any_warn = False
     any_bad = False
+    ok_count = 0
+    warn_count = 0
+    bad_count = 0
 
     for i, ((a, m, delta), res) in enumerate(zip(root_data, residuals)):
         marker = TIER_LABEL[res['tier']]
-        abs_str = mp.nstr(res['abs'], 4, strip_zeros=True)
-        rel_str = mp.nstr(res['rel'], 4, strip_zeros=True)
-        a_str = mp.nstr(a,    8)
-        d_str = mp.nstr(delta, 6)
+        abs_str = format_value(res['abs'], 4)
+        rel_str = format_value(res['rel'], 4)
+        a_str = format_root_location(a, precision=6, width=col_a)
+        d_str = format_value(delta, 6)
 
         print(f"  {i+1:>2}  {a_str:>{col_a}}  {m:>{col_m}}  "
               f"{d_str:>{col_d}}  {abs_str:>{col_abs}}  "
@@ -636,9 +677,15 @@ def format_root_report(root_data, residuals):
 
         if res['tier'] == 'warn':
             any_warn = True
-        if res['tier'] == 'bad':
+            warn_count += 1
+        elif res['tier'] == 'bad':
             any_bad = True
+            bad_count += 1
+        else:
+            ok_count += 1
 
+    print()
+    print(f"  Summary: {ok_count} ok, {warn_count} warn, {bad_count} bad")
     print()
 
     if any_bad:
