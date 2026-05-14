@@ -27,9 +27,9 @@ def expand_to_coefficients(factorized_expr, variable='x') -> List[int]:
 if __name__ == "__main__":
     x = sp.symbols('x')
     
-    # Your example
-    # factored = (x - 5)**10 * (x**2 - 2*x + 2)**25
-    factored = (x - 1)**40 * (x - 2)**30 * (x - 3)**20
+    
+    factored = (x - 5)**10 * (x**2 - 2*x + 2)**25
+    #factored = (x - 1)**40 * (x - 2)**30 * (x - 3)**20
     
     coeffs = expand_to_coefficients(factored)
     
