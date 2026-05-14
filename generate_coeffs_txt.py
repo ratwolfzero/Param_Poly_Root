@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""Generate a coeffs.txt file for root_field.py.
+
+This script writes a whitespace-separated coefficient line to a file so
+long polynomial input can be passed safely to root_field.py without
+shell truncation.
+"""
+
+import argparse
+
+DEFAULT_COEFFICIENTS = (
+    "1 -100 4875 -154550 3586300 -65004960 959184750 -11856139700 "
+    "125373461025 -1152637686700 9331355365175 -67212449958150 "
+    "434423236646850 -2537692965817600 13479060541842000 "
+    "-65437533774969760 291663943616179200 -1198149096770294400 "
+    "4551741934059724000 -16038501195318865600 52552059236783972160 "
+    "-160485548009262540800 457677144244092256000 "
+    "-1220973757015938700800 3051579723960053740800 "
+    "-7154373092169789473792 15751470133257377491200 "
+    "-32596448649036400499200 63451768960168027328000 "
+    "-116251122583102213324800 200548802986054643589120 "
+    "-325864911040780119654400 498782677429229064192000 "
+    "-719183392599176922726400 976689896519505178214400 "
+    "-1248909918881370777354240 1503015372716617330688000 "
+    "-1701306324556395551129600 1809843442757234570035200 "
+    "-1807628612862194719129600 1693041099156697073254400 "
+    "-1484898646996747006771200 1217493541380197346508800 "
+    "-931365805342273375436800 663217382296689229824000 "
+    "-438432861736313773096960 268220995994288101785600 "
+    "-151292819158937842483200 78340251700685701120000 "
+    "-37046094973869280460800 15899873954505720594432 "
+    "-6147070765919476121600 2121003213624180736000 "
+    "-645605339147796480000 170791904686899200000 "
+    "-38500263736115200000 7196454420480000000 "
+    "-1071828172800000000 119373824000000000 "
+    "-8847360000000000 327680000000000"
+)
+
+
+def write_coeffs(output_path: str, coefficients: str) -> None:
+    with open(output_path, 'w', encoding='utf-8') as fh:
+        fh.write(coefficients.strip())
+        fh.write('\n')
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Write polynomial coefficients to a coeffs.txt file.'
+    )
+    parser.add_argument(
+        '--output', '-o', default='coeffs.txt',
+        help='Output file path (default: coeffs.txt)'
+    )
+    parser.add_argument(
+        '--coeffs', '-c', default=None,
+        help='Optional custom whitespace-separated coefficients string.'
+    )
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    coefficients = args.coeffs if args.coeffs is not None else DEFAULT_COEFFICIENTS
+    write_coeffs(args.output, coefficients)
+    print(f'Wrote coefficients to {args.output}')
+
+
+if __name__ == '__main__':
+    main()

@@ -22,6 +22,9 @@ The script then:
 Dependencies: numpy, matplotlib, mpmath
 """
 
+import argparse
+import sys
+
 import numpy as np
 import matplotlib.pyplot as plt
 from mpmath import mp, mpc, mpf, matrix, eig
@@ -172,6 +175,15 @@ def parse_coefficients_strict(text):
     while len(coeffs) > 1 and coeffs[0] == 0:
         coeffs.pop(0)
     return coeffs
+
+
+def load_coefficients_from_file(path):
+    """
+    Read coefficients from a text file and parse them.
+    """
+    with open(path, 'r', encoding='utf-8') as f:
+        text = f.read()
+    return parse_coefficients_strict(text)
 
 
 def get_coefficients_from_user():
@@ -1170,7 +1182,7 @@ def main():
     """
     Main pipeline:
 
-        1. Read polynomial coefficients from stdin.
+        1. Read polynomial coefficients from a file, stdin, or terminal.
         2. Compute all roots via the companion-matrix eigenvalue solver.
         3. Cluster near-coincident roots to estimate multiplicities.
         4. Compute the local triplet (a, m, δ) for each cluster.
@@ -1180,7 +1192,25 @@ def main():
         7. Compute the δ-normalized distance field and Newton flow.
         8. Render the field plot with reliability-coded root markers.
     """
-    coeffs = get_coefficients_from_user()
+    parser = argparse.ArgumentParser(
+        description="Compute root fields for a univariate polynomial."
+    )
+    parser.add_argument('--coeffs', help='Space-separated coefficient string.')
+    parser.add_argument('--coeffs-file', help='Path to a coefficient text file.')
+    args = parser.parse_args()
+
+    if args.coeffs and args.coeffs_file:
+        parser.error('Use either --coeffs or --coeffs-file, not both.')
+
+    if args.coeffs:
+        coeffs = parse_coefficients_strict(args.coeffs)
+    elif args.coeffs_file:
+        coeffs = load_coefficients_from_file(args.coeffs_file)
+    elif not sys.stdin.isatty():
+        coeffs = parse_coefficients_strict(sys.stdin.read())
+    else:
+        coeffs = get_coefficients_from_user()
+
     lc = coeffs[0]
     degree = len(coeffs) - 1
     var = 'x' if is_real_polynomial(coeffs) else 'z'
