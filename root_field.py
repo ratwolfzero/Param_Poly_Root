@@ -1029,6 +1029,13 @@ def compute_field_mpmath(coeffs, root_data, N=200):
             print(f" Computing... {i * 100 // N}% complete")
 
     print(" Computation complete")
+    # Clip dist to prevent overflow in plotting
+    dist = np.clip(dist, -100, 100)
+    
+    # Handle non-finite flow values
+    flow_u = np.where(np.isfinite(flow_u), flow_u, 0.0)
+    flow_v = np.where(np.isfinite(flow_v), flow_v, 0.0)
+    
     return xs, ys, dist, flow_u, flow_v
 
 
