@@ -692,6 +692,9 @@ def format_root_report(root_data, residuals):
 
     print()
     print(f"  Summary: {ok_count} ok, {warn_count} warn, {bad_count} bad")
+    total_roots = sum(m for _, m, _ in root_data)
+    print(f"  Total roots (sum of multiplicities): {total_roots}")
+    print(f"  Total clusters displayed         : {len(root_data)}")
     print()
 
     if any_bad:
