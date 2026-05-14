@@ -65,10 +65,10 @@ mp.dps = 600
 #   m = 30  →  noise ≈ 1e-20  →  safe range: 1e-19 … 1e-10
 #   m = 50  →  noise ≈ 1e-12  →  safe range: 1e-11 … 1e-6
 #
-# The default 1e-29 works for all test cases with mp.dps = 600 and
-# multiplicities up to ~20.  Raise it proportionally if mp.dps is
+# The default 1e-22 works with mp.dps = 600 and
+# multiplicities up to ~20-25.  Raise it proportionally if mp.dps is
 # reduced or multiplicities are higher.
-CLUSTER_TOL = mpf('1e-29')
+CLUSTER_TOL = mpf('1e-22')
 
 # ------------------------------------------------------------------
 # FLOAT64 SAFETY THRESHOLD
