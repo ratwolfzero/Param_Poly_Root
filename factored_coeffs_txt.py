@@ -28,7 +28,9 @@ if __name__ == "__main__":
     x = sp.symbols('x')
     
     
-    factored = (x**2 - 2*x + 2)**25 * (x - 5)**10
+    #factored = (x**2 - 2*x + 2)**25 * (x - 5)**10
+    factored = (x - 1)**20 * (x + 2)**15 * (x**2 + 1)**10
+    #factored = (x - 3)**60
 
     coeffs = expand_to_coefficients(factored)
     

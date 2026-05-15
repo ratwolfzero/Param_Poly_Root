@@ -66,7 +66,7 @@ mp.dps = 600
 #   m = 30  →  noise ≈ 1e-20  →  safe range: 1e-19 … 1e-10
 #   m = 50  →  noise ≈ 1e-12  →  safe range: 1e-11 … 1e-6
 #
-# The default 1e-10 provides a good balance for multiplicities up to ~40
+# The default 1e-10 provides a good balance for multiplicities up to ~40-50
 # at mp.dps = 600. It works well for high-degree polynomials (e.g., degree 90)
 # and is validated against Wilkinson-type polynomials. For very high
 # multiplicities (>50) or lower precision, increase CLUSTER_TOL proportionally.
