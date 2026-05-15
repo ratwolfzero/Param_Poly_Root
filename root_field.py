@@ -29,6 +29,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpmath import mp, mpc, mpf, matrix, eig
 import textwrap
+import re
 
 # ========================= SETTINGS ========================= #
 
@@ -147,9 +148,6 @@ RESIDUAL_WARN_HARD = mpf('1e-3')
 # ========================= INPUT ========================= #
 
 
-
-import re
-
 def parse_coefficients_strict(text):
     """
     Parse a whitespace-separated string of coefficients with full precision.
@@ -164,34 +162,36 @@ def parse_coefficients_strict(text):
     tokens = text.strip().split()
     if not tokens:
         raise ValueError("Empty input.")
-    
+
     coeffs = []
     for token in tokens:
         # Remove any spaces (just in case)
         token = token.replace(' ', '')
-        
+
         # Normalise all imaginary unit variants to 'j'
         # Replace i/I/j/J with j, but careful with numbers like '2i' -> '2j'
         token = re.sub(r'([0-9)])[iIjJ]', r'\1j', token)   # 2i -> 2j
         token = re.sub(r'^[iIjJ](?=[-+]|$)', 'j', token)   # i at start -> j
-        token = re.sub(r'[iIjJ]', 'j', token)              # any remaining i/I -> j
-        
+        # any remaining i/I -> j
+        token = re.sub(r'[iIjJ]', 'j', token)
+
         # Special case: pure imaginary without a digit (e.g., 'j', '+j', '-j')
         # Convert to '0+1j', '0+1j', '0-1j' for uniform parsing
         if token in ('j', '+j'):
             token = '0+1j'
         elif token == '-j':
             token = '0-1j'
-        
+
         # Try to parse as complex number using regex that allows missing real part
         # Pattern: (optional real part) (optional imaginary part)
         # Real part: optional sign, digits, decimal, exponent
         # Imag part: sign, then digits/decimal/exponent, then 'j'
         # Both parts are optional, but at least one must be present.
         pattern = re.compile(
-            r'^' 
+            r'^'
             r'(?:(?P<real>[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|)'  # real part
-            r'(?:(?P<imag_sign>[+-])?(?P<imag_num>\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)j|)'  # imag part
+            # imag part
+            r'(?:(?P<imag_sign>[+-])?(?P<imag_num>\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)j|)'
             r'$'
         )
         match = pattern.match(token)
@@ -199,13 +199,13 @@ def parse_coefficients_strict(text):
             real_str = match.group('real')
             imag_sign = match.group('imag_sign')
             imag_num = match.group('imag_num')
-            
+
             # Determine real part
             if real_str is None:
                 real = mpf(0)
             else:
                 real = mpf(real_str)
-            
+
             # Determine imaginary part
             if imag_num is None:
                 imag = mpf(0)
@@ -213,21 +213,21 @@ def parse_coefficients_strict(text):
                 # If sign is missing, default to '+'
                 sign = 1 if imag_sign is None or imag_sign == '+' else -1
                 imag = sign * mpf(imag_num)
-            
+
             coeffs.append(mpc(real, imag))
             continue
-        
+
         # Not a complex number: try as plain real
         try:
             coeffs.append(mpc(mpf(token)))
             continue
         except:
             raise ValueError(f"Invalid coefficient: '{token}'")
-    
+
     # Strip leading zeros
     while len(coeffs) > 1 and coeffs[0] == 0:
         coeffs.pop(0)
-    
+
     return coeffs
 
 
@@ -953,9 +953,11 @@ def _field_radius(root_data):
     root-focused scaling to keep plotting stable.
     """
     if USE_GLOBAL_SCALING:
-        R = max([abs(a) + delta for a, _, delta in root_data] + [mpf(1)]) * mpf('1.05')
+        R = max([abs(a) + delta for a, _, delta in root_data] +
+                [mpf(1)]) * mpf('1.05')
         if not mp.isfinite(R) or float(R) == float('inf') or R > MAX_PLOT_RADIUS:
-            fallback = max([abs(a) for a, _, _ in root_data] + [mpf(1)]) * mpf('1.5')
+            fallback = max([abs(a)
+                           for a, _, _ in root_data] + [mpf(1)]) * mpf('1.5')
             if not mp.isfinite(fallback) or float(fallback) == float('inf') or fallback > MAX_PLOT_RADIUS:
                 return MAX_PLOT_RADIUS
             return fallback
@@ -1092,11 +1094,11 @@ def compute_field_mpmath(coeffs, root_data, N=200):
     print(" Computation complete")
     # Clip dist to prevent overflow in plotting
     dist = np.clip(dist, -100, 100)
-    
+
     # Handle non-finite flow values
     flow_u = np.where(np.isfinite(flow_u), flow_u, 0.0)
     flow_v = np.where(np.isfinite(flow_v), flow_v, 0.0)
-    
+
     return xs, ys, dist, flow_u, flow_v
 
 
