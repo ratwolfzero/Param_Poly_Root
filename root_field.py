@@ -1,24 +1,20 @@
 """
 root_field.py
 =============
-Global Newton flow over δ-normalized root influence fields.
-
+Global Newton flow over delta-normalized root influence fields.
 For each root of a univariate polynomial P(x) this script computes the
-local parameterization triplet (a, m, δ) defined in the accompanying paper:
-
-    a — root location (cluster centroid)
-    m — algebraic multiplicity (cluster size)
-    δ — characteristic deflection distance = |α|^(-1/m),
-        where α = P^(m)(a) / m! is the leading asymptotic coefficient.
-
+local parameterization triplet (a, m, delta) defined in the accompanying paper:
+    a     -- root location (cluster centroid)
+    m     -- algebraic multiplicity (cluster size)
+    delta -- characteristic deflection distance = |alpha|^(-1/m),
+             where alpha = P^(m)(a) / m! is the leading asymptotic coefficient.
 The script then:
   1. Evaluates a residual check |P(a)| and the scale-invariant quantity
-     |P(a)|·δᵐ to assess numerical reliability of each root.
+     |P(a)| * delta^m to assess numerical reliability of each root.
   2. Optionally refines unreliable roots via Halley / Newton iteration.
   3. Computes and plots:
-       • the δ-normalized distance field  log₁₀(min_i |z−aᵢ|/δᵢ)
-       • the Newton flow  V(z) = −P(z)/P'(z)  as a streamline overlay.
-
+       - the delta-normalized distance field  log10(min_i |z - a_i| / delta_i)
+       - the Newton flow  V(z) = -P(z)/P'(z)  as a streamline overlay.
 Dependencies: numpy, matplotlib, mpmath
 """
 
