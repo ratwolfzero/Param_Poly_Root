@@ -147,48 +147,87 @@ RESIDUAL_WARN_HARD = mpf('1e-3')
 # ========================= INPUT ========================= #
 
 
+
+import re
+
 def parse_coefficients_strict(text):
     """
-    Parse a whitespace-separated string of (possibly complex) coefficients.
-
-    Accepted formats per token:
-        real          e.g.  3,  -1.5,  2e10
-        imaginary     e.g.  2i,  -3I,  j,  +j,  -j
-        complex       e.g.  1+2i,  -3-4j   (no spaces inside the token)
-
-    Leading zero coefficients are stripped so the returned list always
-    starts with the highest non-zero term.
-
-    Returns
-    -------
-    list of mpc
-        Coefficients in descending degree order (highest degree first).
-
-    Raises
-    ------
-    ValueError
-        On empty input, unrecognisable tokens, or all-zero input.
+    Parse a whitespace-separated string of coefficients with full precision.
+    Accepts real, imaginary, and complex numbers in any common format.
+    Examples:
+        "1 2i 3+4I -5-6j"   -> three coefficients: 1, 2i, 3+4i
+        "I 0 I"             -> i, 0, i
+        "2+I 1 0"           -> 2+i, 1, 0
+        "1.2345678901234567890" -> preserved exactly
+        "+j -J"             -> i, -i
     """
-    coeffs = []
     tokens = text.strip().split()
     if not tokens:
         raise ValueError("Empty input.")
+    
+    coeffs = []
     for token in tokens:
-        original = token
-        # Normalize: replace I with i, then i with j (mpmath convention)
-        token = token.replace('I', 'i').replace('i', 'j').replace(' ', '')
+        # Remove any spaces (just in case)
+        token = token.replace(' ', '')
+        
+        # Normalise all imaginary unit variants to 'j'
+        # Replace i/I/j/J with j, but careful with numbers like '2i' -> '2j'
+        token = re.sub(r'([0-9)])[iIjJ]', r'\1j', token)   # 2i -> 2j
+        token = re.sub(r'^[iIjJ](?=[-+]|$)', 'j', token)   # i at start -> j
+        token = re.sub(r'[iIjJ]', 'j', token)              # any remaining i/I -> j
+        
+        # Special case: pure imaginary without a digit (e.g., 'j', '+j', '-j')
+        # Convert to '0+1j', '0+1j', '0-1j' for uniform parsing
+        if token in ('j', '+j'):
+            token = '0+1j'
+        elif token == '-j':
+            token = '0-1j'
+        
+        # Try to parse as complex number using regex that allows missing real part
+        # Pattern: (optional real part) (optional imaginary part)
+        # Real part: optional sign, digits, decimal, exponent
+        # Imag part: sign, then digits/decimal/exponent, then 'j'
+        # Both parts are optional, but at least one must be present.
+        pattern = re.compile(
+            r'^' 
+            r'(?:(?P<real>[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|)'  # real part
+            r'(?:(?P<imag_sign>[+-])?(?P<imag_num>\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)j|)'  # imag part
+            r'$'
+        )
+        match = pattern.match(token)
+        if match:
+            real_str = match.group('real')
+            imag_sign = match.group('imag_sign')
+            imag_num = match.group('imag_num')
+            
+            # Determine real part
+            if real_str is None:
+                real = mpf(0)
+            else:
+                real = mpf(real_str)
+            
+            # Determine imaginary part
+            if imag_num is None:
+                imag = mpf(0)
+            else:
+                # If sign is missing, default to '+'
+                sign = 1 if imag_sign is None or imag_sign == '+' else -1
+                imag = sign * mpf(imag_num)
+            
+            coeffs.append(mpc(real, imag))
+            continue
+        
+        # Not a complex number: try as plain real
         try:
-            # Try direct float/complex parsing: convert j to 1j for Python's complex()
-            z = complex(token)
-            coeffs.append(mpc(z.real, z.imag))
-        except ValueError:
-            # Fallback: try as pure real (in case it's a scientific notation mpmath doesn't handle)
-            try:
-                coeffs.append(mpc(mpf(token)))
-            except Exception:
-                raise ValueError(f"Invalid coefficient: '{original}'")
+            coeffs.append(mpc(mpf(token)))
+            continue
+        except:
+            raise ValueError(f"Invalid coefficient: '{token}'")
+    
+    # Strip leading zeros
     while len(coeffs) > 1 and coeffs[0] == 0:
         coeffs.pop(0)
+    
     return coeffs
 
 
