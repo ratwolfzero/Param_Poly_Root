@@ -29,8 +29,7 @@ if __name__ == "__main__":
     
     
     factored = (x - 5)**10 * (x**2 - 2*x + 2)**25
-    #factored = (x - 1)**40 * (x - 2)**30 * (x - 3)**20
-    
+
     coeffs = expand_to_coefficients(factored)
     
     print(f"Degree: {len(coeffs) - 1}")
@@ -41,3 +40,28 @@ if __name__ == "__main__":
     with open("coeffs.txt", "w") as f:
         f.write(" ".join(map(str, coeffs)))
     print("\nCoefficients saved to coeffs.txt")
+
+
+"""# (x - 1)^20
+factored = (x - 1)**20
+
+
+# (x - 3)^50
+factored = (x - 3)**50
+
+
+# (x - 1)^20 (x + 2)^15 (x^2 + 1)^10
+factored = (x - 1)**20 * (x + 2)**15 * (x**2 + 1)**10
+
+
+# (x^2 - 1)^30
+factored = (x**2 - 1)**30
+
+
+# (x^2 - 2x + 2)^25 (x - 5)^10
+factored = (x**2 - 2*x + 2)**25 * (x - 5)**10
+
+
+# (x - 1)^40 (x - 2)^30 (x - 3)^20
+factored = (x - 1)**40 * (x - 2)**30 * (x - 3)**20
+"""
