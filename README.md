@@ -227,7 +227,7 @@ The triplet $(\mathcal{T}=(a,m,\delta))$ with $(a\in\mathbb{C})$ generalizes ver
 
 ## 8. Global Visualization: Newton Flow and $\delta$-Root Fields
 
-![Root Field](./Root-Field/Figure_1.png)
+![Root Field](./Root-Field/x^55_+_10x^54_+_20x^53_-_100x^52_-_370x^51_+_392x^50_+_2360x^49_-_1060x^48_....png)
 
 To visualize the spatial competition between these triplets, we map the **$\delta$-Normalized Distance Field** and the **Newton Flow**. This provides a "topographical" view of the polynomial's geometry where every root is evaluated against its own intrinsic scale.
 
