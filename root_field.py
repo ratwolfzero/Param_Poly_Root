@@ -380,6 +380,54 @@ def polynomial_to_string(coeffs, var='z', precision=6):
             poly += " + " + t
     return poly
 
+
+def truncate_polynomial(poly_str, max_len=80, keep_head=3, keep_tail=2):
+    """
+    Truncate a polynomial string intelligently by preserving
+    leading and trailing terms.
+
+    Example:
+        x^10 + 2x^9 - 3x^8 + ... + 5x - 7
+    """
+
+    if len(poly_str) <= max_len:
+        return poly_str
+
+    # Split into signed terms while preserving signs.
+    import re
+
+    terms = re.findall(r'[+-]?\s*[^+-]+', poly_str)
+    terms = [t.strip() for t in terms if t.strip()]
+
+    if len(terms) <= keep_head + keep_tail:
+        return poly_str[:max_len - 3] + "..."
+
+    head = terms[:keep_head]
+    tail = terms[-keep_tail:]
+
+    candidate = " ".join(head) + " + ⋯ " + " ".join(tail)
+
+    # Clean accidental "+ -"
+    candidate = candidate.replace("+ -", "- ")
+
+    # If still too long, progressively shrink.
+    while len(candidate) > max_len and keep_tail > 1:
+        keep_tail -= 1
+        tail = terms[-keep_tail:]
+        candidate = " + ".join(head) + " + ⋯ + " + " + ".join(tail)
+        candidate = candidate.replace("+ -", "- ")
+
+    while len(candidate) > max_len and keep_head > 1:
+        keep_head -= 1
+        head = terms[:keep_head]
+        candidate = " + ".join(head) + " + ⋯ + " + " + ".join(tail)
+        candidate = candidate.replace("+ -", "- ")
+
+    if len(candidate) > max_len:
+        candidate = candidate[:max_len - 1] + "…"
+
+    return candidate
+
 # ========================= POLYNOMIAL ========================= #
 
 
@@ -1249,11 +1297,24 @@ def plot_field(xs, ys, dist, flow_u, flow_v, root_data, residuals,
                fontsize=8, framealpha=0.85)
 
     full_equation = f"{poly_str} = 0"
-    window_title = (full_equation[:75] + '...') \
-        if len(full_equation) > 75 else full_equation
+
+    window_title = truncate_polynomial(
+        full_equation,
+        max_len=75,
+        keep_head=3,
+        keep_tail=1
+    )
+
+    title_equation = truncate_polynomial(
+        full_equation,
+        max_len=180,
+        keep_head=5,
+        keep_tail=2
+    )
+
     plt.gcf().canvas.manager.set_window_title(window_title)
 
-    wrapped_eq = textwrap.fill(full_equation, width=80)
+    wrapped_eq = textwrap.fill(title_equation, width=80)
     combined_title = (
         "Global Newton Flow over δ-Normalized Root Influence Fields\n"
         rf"$\mathbf{{P({var}):}}$ {wrapped_eq}"
