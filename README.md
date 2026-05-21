@@ -266,7 +266,8 @@ Algebraic multiplicity alone does not determine the spatial extent of a root’s
 ### Computational Implementation
 
 See:
-root_field.py
+root_field.py or
+SageMath_Jupyter/root_field.ipynb
 
 ---
 
