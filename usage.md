@@ -101,7 +101,7 @@ The script prints diagnostic hints if many `m=1` clusters are found, suggesting 
 
 ```bash
 cd /Users/ralf/Projects/Python/Param_Poly_Root
-python3 faxtored_coeffs_txt.py
+python3 factored_coeffs_txt.py
 python3 root_field.py --coeffs-file coeffs.txt
 ```
 
