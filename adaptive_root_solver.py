@@ -7,7 +7,8 @@ import mpmath as mp
 # ---------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------
-mp.dps = 600
+# (mp.dps is not valid in this mpmath version; precision is controlled
+# by mp.mp.dps and by local mp.workdps(...) contexts below.)
 # ---------------------------------------------------------
 
 # Note: this solver is a delta-guided adaptive heuristic.
