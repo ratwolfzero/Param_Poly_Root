@@ -469,7 +469,7 @@ def parse_input():
 def print_usage():
     usage_text = '''
 Usage:
-  python3 untitled.py [options]
+  python3 adaptive_root_solver.py [options]
 
 Options:
   --help, -h              Show this help message and exit
