@@ -33,6 +33,10 @@ GRID_RESOLUTION = 400
 # Fallback clustering threshold: roots within this relative distance are grouped
 FALLBACK_CLUSTER_THRESHOLD = 1e-4
 
+# mpmath polyroots iteration limit (higher for difficult polynomials)
+# Default 100 works for most. Increase to 500-1000 for ill-conditioned polynomials
+MPMATH_MAXSTEPS = 500
+
 # ================================================================
 # PRECISION HELPERS
 # ================================================================
@@ -292,7 +296,7 @@ except Exception as e:
     
     try:
         # Use mpmath's polyroots (companion matrix eigenvalue method)
-        raw_roots = polyroots(coeffs_mpc)
+        raw_roots = polyroots(coeffs_mpc, maxsteps=MPMATH_MAXSTEPS)
         
         # Cluster by proximity to detect multiplicities
         roots = cluster_roots_by_proximity(raw_roots, threshold=FALLBACK_CLUSTER_THRESHOLD)
@@ -304,6 +308,10 @@ except Exception as e:
         print(f"\n❌ Both solvers failed!")
         print(f"   SymPy: {e}")
         print(f"   mpmath: {e2}")
+        print(f"\n💡 Troubleshooting:")
+        print(f"   • Try increasing MPMATH_MAXSTEPS (currently {MPMATH_MAXSTEPS})")
+        print(f"   • Increase mp.dps for higher precision")
+        print(f"   • This polynomial may be ill-conditioned or transcendental")
         sys.exit(1)
 
 print(f"Found {len(roots)} distinct roots\n")
