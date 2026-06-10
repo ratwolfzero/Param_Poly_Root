@@ -310,28 +310,34 @@ without modifying the triplet.
 The δ-root field is not merely a visualization tool. It realizes a deep geometric structure inherent to the triplet parameterization.
 
 Define the **normalized radial functions**
+
 $$
 \rho_i(z) := \frac{|z - a_i|}{\delta_i}.
 $$
 
 The δ-root field is then essentially
+
 $$
 \text{Field}(z) = \log_{10} \Bigl( \min_i \rho_i(z) \Bigr).
 $$
 
 The **influence cells** (weighted Voronoi cells) are
+
 $$
 V_i = \{ z \in \mathbb{C} : \rho_i(z) \le \rho_j(z) \ \forall\, j \}.
 $$
 
 **Theorem (Apollonius Boundaries).**  
 The boundary between any two cells \(V_i\) and \(V_j\) (\(i \neq j\)) is given by
+
 $$
 \{ z : \rho_i(z) = \rho_j(z) \} = \Bigl\{ z : \frac{|z - a_i|}{|z - a_j|} = \frac{\delta_i}{\delta_j} \Bigr\},
 $$
+
 which is a classical **Apollonius circle** with respect to the points \(a_i, a_j\) and ratio \(\lambda = \delta_i / \delta_j\).
 
 Moreover, each individual level set \(|z - a_i| = \delta_i\) is a **canonical circle** whose radius depends on the global root configuration via
+
 $$
 \delta_i = \Biggl( \prod_{j \neq i} |a_i - a_j|^{m_j} \Biggr)^{-1/m_i}.
 $$
