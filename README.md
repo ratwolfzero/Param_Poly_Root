@@ -318,7 +318,7 @@ $$
 The δ-root field is then essentially
 
 $$
-\text{Field}(z) = \log_{10} \Bigl( \min_i \rho_i(z) \Bigr).
+\text{Field}(z) = \log_{10} \left( \min_i \rho_i(z) \right).
 $$
 
 The **influence cells** (weighted Voronoi cells) are
@@ -331,7 +331,7 @@ $$
 The boundary between any two cells \(V_i\) and \(V_j\) (\(i \neq j\)) is given by
 
 $$
-\{ z : \rho_i(z) = \rho_j(z) \} = \left\{ z : \frac{|z - a_i|}{|z - a_j|} = \frac{\delta_i}{\delta_j} \right\},
+\{ z : \rho_i(z) = \rho_j(z) \} = \{ z : \frac{|z - a_i|}{|z - a_j|} = \frac{\delta_i}{\delta_j} \},
 $$
 
 which is a classical **Apollonius circle** with respect to the points \(a_i, a_j\) and ratio \(\lambda = \delta_i / \delta_j\).
@@ -344,4 +344,4 @@ $$
 
 **Corollary.** The collection of all δ-circles together with their Apollonius boundaries forms a complete, canonically invariant circle-geometric realization of the triplet system.
 
-This establishes a rigorous link between local triplet theory and global circle geometry / weighted Voronoi tessellations in the complex plane.
+This establishes a rigorous link between the local triplet theory and global circle geometry / weighted Voronoi tessellations in the complex plane.
