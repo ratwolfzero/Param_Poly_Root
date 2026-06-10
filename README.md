@@ -331,7 +331,7 @@ $$
 The boundary between any two cells \(V_i\) and \(V_j\) (\(i \neq j\)) is given by
 
 $$
-\{ z : \rho_i(z) = \rho_j(z) \} = \Bigl\{ z : \frac{|z - a_i|}{|z - a_j|} = \frac{\delta_i}{\delta_j} \Bigr\},
+\{ z : \rho_i(z) = \rho_j(z) \} = \left\{ z : \frac{|z - a_i|}{|z - a_j|} = \frac{\delta_i}{\delta_j} \right\},
 $$
 
 which is a classical **Apollonius circle** with respect to the points \(a_i, a_j\) and ratio \(\lambda = \delta_i / \delta_j\).
@@ -339,9 +339,9 @@ which is a classical **Apollonius circle** with respect to the points \(a_i, a_j
 Moreover, each individual level set \(|z - a_i| = \delta_i\) is a **canonical circle** whose radius depends on the global root configuration via
 
 $$
-\delta_i = \Biggl( \prod_{j \neq i} |a_i - a_j|^{m_j} \Biggr)^{-1/m_i}.
+\delta_i = \left( \prod_{j \neq i} |a_i - a_j|^{m_j} \right)^{-1/m_i}.
 $$
 
 **Corollary.** The collection of all δ-circles together with their Apollonius boundaries forms a complete, canonically invariant circle-geometric realization of the triplet system.
 
-This establishes a rigorous link between Becker’s local triplet theory and global circle geometry / weighted Voronoi tessellations in the complex plane.
+This establishes a rigorous link between local triplet theory and global circle geometry / weighted Voronoi tessellations in the complex plane.
