@@ -4,15 +4,12 @@
 # WITH TRIPLET DELTA CIRCLE INTERSECTION ANALYSIS
 # Pure Python Version (SymPy + mpmath with fallback)
 # ================================================================
-
 import matplotlib
 matplotlib.use('TkAgg', force=True)
-
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Button
 from matplotlib.patches import Circle
-
 import sympy as sp
 from mpmath import mp, mpc, nstr, polyroots
 import re
@@ -26,15 +23,12 @@ from typing import List, Tuple, Dict, Optional
 # SETTINGS
 # ================================================================
 mp.dps = 600  # Arbitrary precision: 600 decimal places
-
 print_digits = 20
 USE_GLOBAL_SCALING = True
 MAX_PLOT_RADIUS = 1e8
 GRID_RESOLUTION = 400
-
 # Fallback clustering threshold: roots within this relative distance are grouped
 FALLBACK_CLUSTER_THRESHOLD = 1e-4
-
 # mpmath polyroots iteration limit (higher for difficult polynomials)
 MPMATH_MAXSTEPS = 500
 
@@ -62,29 +56,25 @@ def poly_eval(coeffs_mpc, r):
 # ================================================================
 def get_polynomial_coeffs():
     coeff_file = 'coeffs.txt'
-    
     # === Try reading from file first ===
     if os.path.exists(coeff_file):
         print(f"Found '{coeff_file}'. Attempting to read coefficients...")
         try:
             with open(coeff_file, 'r') as f:
                 content = f.read()
-            
             lines = content.splitlines()
             clean_content = " ".join(
-                line.strip() 
-                for line in lines 
+                line.strip()
+                for line in lines
                 if line.strip() and not line.strip().startswith('#')
             )
             tokens = clean_content.split()
-            
             if not tokens:
                 print(f"'{coeff_file}' is empty. Falling back to manual input.")
             else:
                 pattern = re.compile(r'^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$')
                 coeffs_mpc = []
                 coeff_strings = []
-                
                 for t in tokens:
                     t_clean = t.lstrip("0") or "0"
                     if t_clean.startswith("."):
@@ -108,11 +98,10 @@ def get_polynomial_coeffs():
                         print(f"✅ Successfully loaded {len(coeffs_mpc)} coefficients from '{coeff_file}'")
                         sys.stdout.flush()
                         return coeffs_mpc, coeff_strings
-                        
         except Exception as e:
             print(f"Error reading '{coeff_file}': {e}")
             print("Falling back to manual input.")
-    
+
     # === Manual Input (fallback) ===
     pattern = re.compile(r'^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$')
     while True:
@@ -120,11 +109,9 @@ def get_polynomial_coeffs():
         if not s:
             print("Error: No input provided.")
             continue
-            
         tokens = s.split()
         coeffs_mpc = []
         coeff_strings = []
-        
         for t in tokens:
             t_clean = t.lstrip("0") or "0"
             if t_clean.startswith("."):
@@ -147,21 +134,17 @@ def get_polynomial_coeffs():
                 coeff_strings.pop(0)
             return coeffs_mpc, coeff_strings
 
-
 coeffs_mpc, coeff_strings = get_polynomial_coeffs()
 
 # ================================================================
 # POLYNOMIAL CONSTRUCTION (SymPy)
 # ================================================================
 x = sp.Symbol('x')
-
 # Build SymPy polynomial from coefficients
 coeffs_sympy = [sp.sympify(c) for c in coeff_strings]
-poly_sympy = sum(coeffs_sympy[i] * x**(len(coeffs_sympy)-1-i) 
+poly_sympy = sum(coeffs_sympy[i] * x**(len(coeffs_sympy)-1-i)
                  for i in range(len(coeffs_sympy)))
-
 degree = len(coeffs_mpc) - 1
-
 print(f"\nPolynomial degree: {degree}")
 
 # ================================================================
@@ -170,7 +153,6 @@ print(f"\nPolynomial degree: {degree}")
 def simple_polynomial_string(coeff_strings, var="x"):
     if not coeff_strings:
         return "0"
-    
     def fmt_coeff(c_str):
         try:
             val = float(c_str)
@@ -181,39 +163,29 @@ def simple_polynomial_string(coeff_strings, var="x"):
             return formatted
         except:
             return c_str
-    
     terms = []
     n = len(coeff_strings)
-    
     for i, coeff in enumerate(coeff_strings):
         power = n - i - 1
         coeff_float = float(coeff)
-        
         if coeff_float == 0 and power > 0:
             continue
-        
         sign = "-" if coeff_float < 0 else "+"
         coeff_abs = fmt_coeff(str(abs(coeff_float)))
-        
         if power == 0:
             term = coeff_abs
         elif power == 1:
             term = var if coeff_abs == "1" else f"{coeff_abs}{var}"
         else:
-            term = (f"{var}^{power}" if coeff_abs == "1" 
-                   else f"{coeff_abs}{var}^{power}")
-        
+            term = (f"{var}^{power}" if coeff_abs == "1"
+                    else f"{coeff_abs}{var}^{power}")
         terms.append((sign, term))
-    
     if not terms:
         return "0"
-    
     first_sign, first_term = terms[0]
     result = first_term if first_sign == "+" else f"-{first_term}"
-    
     for sign, term in terms[1:]:
         result += f" {sign} {term}"
-    
     return result
 
 poly_str = simple_polynomial_string(coeff_strings)
@@ -226,86 +198,63 @@ def cluster_roots_by_proximity(raw_roots, threshold=FALLBACK_CLUSTER_THRESHOLD):
     """
     Cluster numerically computed roots by proximity.
     Returns list of (centroid_root, multiplicity) tuples.
-    Threshold is a relative distance: |z1 - z2| / (|z1| + |z2| + 1) < threshold
     """
     if not raw_roots:
         return []
-    
     raw_roots = sorted(raw_roots, key=lambda z: (abs(z.imag), abs(z.real)))
     clusters = []
     used = [False] * len(raw_roots)
-    
     for i, root in enumerate(raw_roots):
         if used[i]:
             continue
-        
         cluster = [root]
         used[i] = True
-        
         for j in range(i + 1, len(raw_roots)):
             if used[j]:
                 continue
-            
             other = raw_roots[j]
             dist = abs(root - other)
             scale = abs(root) + abs(other) + 1
             rel_dist = dist / scale
-            
             if rel_dist < threshold:
                 cluster.append(other)
                 used[j] = True
-        
         centroid = sum(cluster) / len(cluster)
         multiplicity = len(cluster)
         clusters.append((centroid, multiplicity))
-    
     return clusters
 
 # ================================================================
 # ROOT FINDING WITH MULTIPLICITY
 # ================================================================
 print("\nComputing roots with multiplicities...")
-
 try:
     # Try SymPy algebraic solver first
-    print("  → Attempting SymPy algebraic solver...")
+    print(" → Attempting SymPy algebraic solver...")
     roots_dict = sp.roots(poly_sympy, x)
-    
     if roots_dict:
         # SymPy succeeded
         roots = []
         for root_expr, mult in roots_dict.items():
             root_mpc = to_mpc(sp.N(root_expr, mp.dps))
             roots.append((root_mpc, mult))
-        
-        print(f"  ✓ SymPy: found {len(roots)} distinct roots (exact)")
+        print(f" ✓ SymPy: found {len(roots)} distinct roots (exact)")
         solver_used = "SymPy (algebraic)"
     else:
         raise ValueError("SymPy returned empty result")
-        
 except Exception as e:
     # Fall back to mpmath numerical solver with clustering
-    print(f"  ⚠ SymPy failed: {type(e).__name__}")
-    print(f"  → Falling back to mpmath numerical solver with clustering...")
-    
+    print(f" ⚠ SymPy failed: {type(e).__name__}")
+    print(f" → Falling back to mpmath numerical solver with clustering...")
     try:
-        # Use mpmath's polyroots (companion matrix eigenvalue method)
         raw_roots = polyroots(coeffs_mpc, maxsteps=MPMATH_MAXSTEPS)
-        
-        # Cluster by proximity to detect multiplicities
         roots = cluster_roots_by_proximity(raw_roots, threshold=FALLBACK_CLUSTER_THRESHOLD)
-        
-        print(f"  ✓ mpmath: found {len(roots)} clusters (numerical + clustering)")
+        print(f" ✓ mpmath: found {len(roots)} clusters (numerical + clustering)")
         solver_used = "mpmath (numerical + clustering)"
-        
     except Exception as e2:
         print(f"\n❌ Both solvers failed!")
-        print(f"   SymPy: {e}")
-        print(f"   mpmath: {e2}")
-        print(f"\n💡 Troubleshooting:")
-        print(f"   • Try increasing MPMATH_MAXSTEPS (currently {MPMATH_MAXSTEPS})")
-        print(f"   • Increase mp.dps for higher precision")
-        print(f"   • This polynomial may be ill-conditioned or transcendental")
+        print(f" SymPy: {e}")
+        print(f" mpmath: {e2}")
         sys.exit(1)
 
 print(f"Found {len(roots)} distinct roots\n")
@@ -317,18 +266,14 @@ def build_derivative_tower_coeffs(coeffs_mpc):
     """Build tower of derivatives as coefficient lists."""
     tower = [list(coeffs_mpc)]
     degree = len(coeffs_mpc) - 1
-    
     for _ in range(degree):
         prev = tower[-1]
         m = len(prev) - 1
-        
         if m <= 0:
             tower.append([mpc(0)])
             continue
-        
         next_coeffs = [prev[i] * mpc(m - i) for i in range(m)]
         tower.append(next_coeffs)
-    
     return tower
 
 derivative_tower = build_derivative_tower_coeffs(coeffs_mpc)
@@ -337,14 +282,11 @@ derivative_tower = build_derivative_tower_coeffs(coeffs_mpc)
 # TRIPLET CACHE: (root, multiplicity) → (root, m, δ, α)
 # ================================================================
 triplet_cache = {}
-
 for root_mpc, mult in roots:
     alpha = poly_eval(derivative_tower[mult], root_mpc) / mpc(factorial(mult))
     abs_alpha = abs(alpha)
-    
-    delta = (None if abs_alpha == 0 
-            else abs_alpha ** (-mpc(1) / mpc(mult)))
-    
+    delta = (None if abs_alpha == 0
+             else abs_alpha ** (-mpc(1) / mpc(mult)))
     triplet_cache[(root_mpc, mult)] = (root_mpc, mult, delta, alpha)
 
 # ================================================================
@@ -353,42 +295,33 @@ for root_mpc, mult in roots:
 if roots:
     print("Local Asymptotic Triplets T = (a, m, δ)")
     print("-" * 120)
-    
     rows = []
     for i, (root_mpc, mult) in enumerate(roots, 1):
         _, _, delta, _ = triplet_cache[(root_mpc, mult)]
-        
         root_real = float(root_mpc.real)
         root_imag = float(root_mpc.imag)
-        
         if abs(root_imag) < 1e-12:
             root_str = f"{root_real:.16g}"
         else:
             root_str = f"{root_real:.16g} + {abs(root_imag):.16g}i" if root_imag >= 0 else f"{root_real:.16g} - {abs(root_imag):.16g}i"
-        
         if delta is None:
             delta_str = "∞"
         else:
             delta_float = float(abs(delta))
             delta_str = f"{delta_float:.16g}"
-        
         residual_val = abs(poly_eval(coeffs_mpc, root_mpc))
         residual_float = float(residual_val)
         if residual_float < 1e-10:
             residual_str = f"{residual_float:.2e}"
         else:
             residual_str = f"{residual_float:.6g}"
-        
         rows.append((i, root_str, mult, delta_str, residual_str))
-    
     col_widths = [3, 30, 3, 20, 14]
     header = f"{'#':<{col_widths[0]}} {'Root a':<{col_widths[1]}} {'m':<{col_widths[2]}} {'δ':<{col_widths[3]}} {'Residual':<{col_widths[4]}}"
     print(header)
     print("-" * 120)
-    
     for i, root_str, mult, delta_str, residual_str in rows:
         print(f"{i:<{col_widths[0]}} {root_str:<{col_widths[1]}} {mult:<{col_widths[2]}} {delta_str:<{col_widths[3]}} {residual_str:<{col_widths[4]}}")
-    
     print(f"\n[Solver: {solver_used}]")
     print()
 
@@ -398,17 +331,13 @@ if roots:
 def circle_intersection_info(center1: complex, r1: float, center2: complex, r2: float) -> Dict:
     """
     Compute detailed geometric relationship between two circles.
-    Returns dict with keys: status, distance, overlap, intersection_points.
     """
     d = abs(center1 - center2)
     sum_r = r1 + r2
     diff_r = abs(r1 - r2)
-
     if d < 1e-12:
         return {'status': 'concentric', 'distance': 0.0, 'overlap': None, 'intersection_points': []}
-
     result = {'distance': d, 'overlap': None, 'intersection_points': []}
-
     if d > sum_r + 1e-12:
         result['status'] = 'separate (no intersection)'
     elif abs(d - sum_r) < 1e-12:
@@ -449,11 +378,9 @@ def print_circle_analysis(triplets: List[Dict]):
     if n < 2:
         print("Need at least two circles for intersection analysis.")
         return
-
     print("\n--- CIRCLE PAIR ANALYSIS (δ circles) ---")
     print(f"{'Root A':^20} | {'Root B':^20} | {'Status':^35} | {'Overlap'}")
     print("-" * 85)
-
     for i in range(n):
         t1 = triplets[i]
         r1 = t1['delta']
@@ -468,7 +395,6 @@ def print_circle_analysis(triplets: List[Dict]):
                 r2_str = "∞"
             else:
                 r2_str = f"{r2:.4f}"
-
             if np.isinf(r1) or np.isinf(r2):
                 status = "Delta infinite (exact multiple root?)"
                 overlap = ""
@@ -476,15 +402,13 @@ def print_circle_analysis(triplets: List[Dict]):
                 info = circle_intersection_info(t1['root'], r1, t2['root'], r2)
                 status = info['status']
                 overlap = f"{info['overlap']:.4f}" if info['overlap'] is not None else ""
-
             root_str1 = f"{t1['root'].real:+.3f}{t1['root'].imag:+.3f}j"
             root_str2 = f"{t2['root'].real:+.3f}{t2['root'].imag:+.3f}j"
             print(f"{root_str1:^20} | {root_str2:^20} | {status:^35} | {overlap:>8}")
 
-# Build triplets list from cache (compatible with analysis)
+# Build triplets list from cache
 triplets_list = []
 for (root_mpc, mult), (_, _, delta, _) in triplet_cache.items():
-    r = float(root_mpc.real) if abs(root_mpc.imag) < 1e-12 else complex(root_mpc)
     triplets_list.append({
         'root': complex(root_mpc),
         'mult': mult,
@@ -503,24 +427,21 @@ def plot_delta_circles(triplets: List[Dict]):
     if not finite_triplets:
         print("No finite δ circles to plot.")
         return
-
     fig3, ax3 = plt.subplots(figsize=(8, 8))
     all_centers = [t['root'] for t in finite_triplets]
     all_radii = [t['delta'] for t in finite_triplets]
     centers_real = [c.real for c in all_centers]
     centers_imag = [c.imag for c in all_centers]
-    max_radius = max(all_radii)
-    margin = max(max_radius, 0.5)
+    max_radius = max(all_radii) if all_radii else 1.0
+    margin = max(max_radius, 0.5) * 1.1
     x_min = min(centers_real) - margin
     x_max = max(centers_real) + margin
     y_min = min(centers_imag) - margin
     y_max = max(centers_imag) + margin
     ax3.set_xlim(x_min, x_max)
     ax3.set_ylim(y_min, y_max)
-
     max_mult = max(t['mult'] for t in finite_triplets)
     colors = plt.cm.viridis(np.linspace(0, 1, max_mult+1))
-
     for t in finite_triplets:
         root = t['root']
         mult = t['mult']
@@ -530,9 +451,7 @@ def plot_delta_circles(triplets: List[Dict]):
                         linestyle='--', alpha=0.7)
         ax3.add_patch(circle)
         ax3.plot(root.real, root.imag, 'o', markersize=8+2*mult,
-                 color=colors[mult],
-                 label=f"m={mult}" if mult>1 else None)
-
+                 color=colors[mult])
     # Plot intersection points
     n = len(finite_triplets)
     for i in range(n):
@@ -544,53 +463,41 @@ def plot_delta_circles(triplets: List[Dict]):
             info = circle_intersection_info(t1['root'], r1, t2['root'], r2)
             for p in info['intersection_points']:
                 ax3.plot(p.real, p.imag, 'rx', markersize=8, markeredgewidth=2)
-
     ax3.set_aspect('equal')
     ax3.grid(True, alpha=0.3)
     ax3.set_xlabel("Re(z)")
     ax3.set_ylabel("Im(z)")
     ax3.set_title("δ‑Circles and Their Intersections")
-    handles, labels = ax3.get_legend_handles_labels()
-    by_label = dict(zip(labels, handles))
-    if by_label:
-        ax3.legend(by_label.values(), by_label.keys())
     plt.tight_layout()
     return fig3
 
 # ================================================================
-# FIELD RADIUS COMPUTATION (for original figures)
+# FIELD RADIUS COMPUTATION
 # ================================================================
 def compute_field_radius(roots_with_mult, use_global_scaling=True):
     if not roots_with_mult:
         return 1.0
-    
     centroids = []
     deltas = []
-    
     for r, m in roots_with_mult:
         _, _, delta, _ = triplet_cache[(r, m)]
         centroids.append(float(abs(r)))
         deltas.append(float(abs(delta)) if delta is not None else float('inf'))
-    
     if use_global_scaling:
-        extents = [c + d for c, d in zip(centroids, deltas) 
-                  if d != float('inf')]
-        
+        extents = [c + d for c, d in zip(centroids, deltas)
+                   if d != float('inf')]
         if extents:
             R = max(extents) * 1.05
         else:
             R = float('inf')
-        
         if R == float('inf') or R > MAX_PLOT_RADIUS:
             fallback = max(centroids) * 1.5
             return min(fallback, MAX_PLOT_RADIUS)
-        
         return float(R)
-    
     return float(max(centroids)) * 1.5
 
 # ================================================================
-# ROOT FIELD COMPUTATION (original)
+# ROOT FIELD COMPUTATION
 # ================================================================
 def compute_root_field(roots_with_mult, N=GRID_RESOLUTION, use_global_scaling=True):
     centroids = np.array([complex(r) for r, _ in roots_with_mult], dtype=complex)
@@ -600,77 +507,60 @@ def compute_root_field(roots_with_mult, N=GRID_RESOLUTION, use_global_scaling=Tr
         else float(abs(triplet_cache[(r, m)][2]))
         for r, m in roots_with_mult
     ], dtype=float)
-    
     R = compute_field_radius(roots_with_mult, use_global_scaling)
     R = float(abs(R))
     print(f"Plot radius R = {R:.6e}\n")
-    
     xs = np.linspace(-R, R, N)
     ys = np.linspace(-R, R, N)
-    
     X, Y = np.meshgrid(xs, ys)
     Z = X + 1j * Y
-    
     # Distance field
     min_dist = np.full(X.shape, np.inf, dtype=float)
-    
     for a, d in zip(centroids, deltas):
         if np.isfinite(d) and d > 0:
             min_dist = np.minimum(min_dist, np.abs(Z - a) / d)
-    
     dist_field = np.log10(np.clip(min_dist, 1e-30, None))
-    
     # Newton flow field
     log_deriv = np.zeros(Z.shape, dtype=complex)
     EPS = 1e-30
-    
     for a, m_val in zip(centroids, mults):
         dz = Z - a
         safe = np.where(np.abs(dz) < EPS, EPS + 0j, dz)
         log_deriv += m_val / safe
-    
     with np.errstate(divide='ignore', invalid='ignore'):
         V = -1.0 / log_deriv
-        mag = np.abs(V)
-        mag_safe = np.where(mag > 0, mag, 1.0)
-        flow_u = np.real(V) / mag_safe
-        flow_v = np.imag(V) / mag_safe
-    
+    mag = np.abs(V)
+    mag_safe = np.where(mag > 0, mag, 1.0)
+    flow_u = np.real(V) / mag_safe
+    flow_v = np.imag(V) / mag_safe
     return xs, ys, dist_field, flow_u, flow_v, R
 
 # ================================================================
-# PLOTTING (original figures)
+# PLOTTING
 # ================================================================
 def truncate_polynomial(poly_str, max_len=80, keep_head=3, keep_tail=2):
     if len(poly_str) <= max_len:
         return poly_str
-    
     terms = re.findall(r'[+-]?\s*[^+-]+', poly_str)
     terms = [t.strip() for t in terms if t.strip()]
-    
     if len(terms) <= keep_head + keep_tail:
         return poly_str[:max_len - 3] + "..."
-    
     head = terms[:keep_head]
     tail = terms[-keep_tail:]
     candidate = " ".join(head) + " + ⋯ " + " ".join(tail)
     candidate = candidate.replace("+ -", "- ")
-    
     while len(candidate) > max_len and keep_tail > 1:
         keep_tail -= 1
         tail = terms[-keep_tail:]
-        candidate = " + ".join(head) + " + ⋯ + " + " + ".join(tail)
+        candidate = " + ".join(head) + " + ⋯ + " + " ".join(tail)
         candidate = candidate.replace("+ -", "- ")
-    
     while len(candidate) > max_len and keep_head > 1:
         keep_head -= 1
         head = terms[:keep_head]
-        candidate = " + ".join(head) + " + ⋯ + " + " + ".join(tail)
+        candidate = " + ".join(head) + " + ⋯ + " + " ".join(tail)
         candidate = candidate.replace("+ -", "- ")
-    
     if len(candidate) > max_len:
         candidate = candidate[:max_len - 1] + "…"
-    
     return candidate
 
 # ================================================================
@@ -678,168 +568,131 @@ def truncate_polynomial(poly_str, max_len=80, keep_head=3, keep_tail=2):
 # ================================================================
 if roots:
     print("Rendering Figure 1: δ-Normalized Root Influence Field + Newton Flow")
-    
-    xs, ys, dist, fu, fv, R = compute_root_field(roots, N=GRID_RESOLUTION, 
-                                                  use_global_scaling=USE_GLOBAL_SCALING)
-    
+    xs, ys, dist, fu, fv, R = compute_root_field(roots, N=GRID_RESOLUTION,
+                                                 use_global_scaling=USE_GLOBAL_SCALING)
     fig, ax = plt.subplots(figsize=(12, 10.5))
-    
-    im = ax.imshow(dist, extent=[xs[0], xs[-1], ys[0], ys[-1]], 
+    im = ax.imshow(dist, extent=[xs[0], xs[-1], ys[0], ys[-1]],
                    origin='lower', cmap='viridis', aspect='equal')
-    
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04,
-                label=r'$\log_{10}(\min_i |z-a_i|/\delta_i)$')
-    
-    ax.streamplot(xs, ys, fu, fv, density=1.3, color='black', 
-                 linewidth=0.55, arrowsize=0.9)
-    
+                 label=r'$\log_{10}(\min_i |z-a_i|/\delta_i)$')
+    ax.streamplot(xs, ys, fu, fv, density=1.3, color='black',
+                  linewidth=0.55, arrowsize=0.9)
     # Plot roots and δ-circles
     for r, m in roots:
         r_complex = complex(r)
         _, _, delta, _ = triplet_cache[(r, m)]
         delta_f = float(abs(delta)) if delta is not None else np.inf
-        
         if np.isfinite(delta_f) and 0 < delta_f < R * 2:
             circle = Circle((r_complex.real, r_complex.imag), delta_f,
-                          fill=False, color='red', linestyle='--', 
-                          linewidth=1.5, alpha=0.75)
+                            fill=False, color='red', linestyle='--',
+                            linewidth=1.5, alpha=0.75)
             ax.add_patch(circle)
-        
         ax.scatter(r_complex.real, r_complex.imag, color='red',
-                  s=40 * m**0.65, edgecolors='black', linewidth=0.8, zorder=5)
-    
+                   s=40 * m**0.65, edgecolors='black', linewidth=0.8, zorder=5)
     # Title
     full_equation = poly_str.strip()
     if not (full_equation.endswith("= 0") or full_equation.endswith("=0")):
         full_equation += " = 0"
-    
-    window_title = truncate_polynomial(full_equation, max_len=75, 
-                                      keep_head=3, keep_tail=1)
-    title_equation = truncate_polynomial(full_equation, max_len=180, 
-                                        keep_head=5, keep_tail=2)
+    window_title = truncate_polynomial(full_equation, max_len=75,
+                                       keep_head=3, keep_tail=1)
+    title_equation = truncate_polynomial(full_equation, max_len=180,
+                                         keep_head=5, keep_tail=2)
     wrapped_eq = textwrap.fill(title_equation, width=80)
-    
     try:
         fig.canvas.manager.set_window_title(window_title)
     except:
         pass
-    
     ax.set_title("δ-Normalized Root Influence Field + Newton Flow\n" + wrapped_eq,
-                fontsize=11, pad=18)
+                 fontsize=11, pad=18)
     ax.set_xlabel("Re(z)")
     ax.set_ylabel("Im(z)")
     ax.grid(True, alpha=0.25)
-    
     plt.tight_layout()
-    
+
     # ================================================================
     # FIGURE 2: Complex Plane + Real Line
     # ================================================================
     print("Rendering Figure 2: Roots in Complex Plane + Real Line")
-    
     roots_np = np.array([complex(r) for r, _ in roots], dtype=complex)
-    
     fig2, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
-    
     # Complex plane
     ax1.axhline(0, color='gray', lw=1)
     ax1.axvline(0, color='gray', lw=1)
-    
     max_delta = 0.0
     for r, m in roots:
         r_complex = complex(r)
         ax1.scatter(r_complex.real, r_complex.imag, color='red', s=12*m, zorder=5)
-        
         _, _, delta, _ = triplet_cache[(r, m)]
         delta_float = float(abs(delta)) if delta is not None else 0.0
-        
         if delta_float > 0:
             circle = Circle((r_complex.real, r_complex.imag), delta_float,
-                          fill=False, linestyle='--', linewidth=1.5,
-                          edgecolor='blue', alpha=0.75)
+                            fill=False, linestyle='--', linewidth=1.5,
+                            edgecolor='blue', alpha=0.75)
             ax1.add_patch(circle)
             max_delta = max(max_delta, delta_float)
-    
     ax1.set_title("Roots in Complex Plane\n(red size ∝ multiplicity | blue dashed = δ)")
     ax1.set_xlabel("Re")
     ax1.set_ylabel("Im")
     ax1.grid(True)
-    
     if len(roots_np) > 0:
         max_root = float(max(np.abs(roots_np)))
         plot_radius = max((max_root + max_delta) * 1.28, 2.5)
         ax1.set_xlim(-plot_radius, plot_radius)
         ax1.set_ylim(-plot_radius, plot_radius)
-    
     ax1.set_aspect('equal')
-    
+
     # Real line plot
     real_roots = [(r, m) for r, m in roots if abs(r.imag) < 1e-12]
-    
     xmin = (float(min(roots_np.real)) - 1.0 if roots_np.size > 0 else -5.0)
     xmax = (float(max(roots_np.real)) + 1.0 if roots_np.size > 0 else 5.0)
-    
     x_list = np.linspace(xmin, xmax, 2000).tolist()
     for r, _ in real_roots:
         root_float = float(r.real)
         if not any(abs(root_float - x) < 1e-12 for x in x_list):
             x_list.append(root_float)
-    
     x_list.sort()
     x_vals = np.array(x_list)
     y_vals = np.array([float(abs(poly_eval(coeffs_mpc, to_mpc(xx)))) for xx in x_vals])
-    
     if np.max(np.abs(y_vals)) > 1e300:
         y_vals = np.clip(y_vals, -1e300, 1e300)
-    
     ax2.plot(x_vals, y_vals, lw=1, label="f(x)")
     ax2.axhline(0, color='gray', lw=1)
-    
     for r, m in real_roots:
         ax2.scatter(float(r.real), 0.0, color='red', s=10*m, zorder=5)
-    
     ax2.set_title("Polynomial on Real Line")
     ax2.set_xlabel("x")
     ax2.set_ylabel("f(x)")
     ax2.grid(True)
     ax2.legend()
-    
-    init_ylim = ax2.get_ylim()
-    
+
     # Interactive controls
     linthresh = 1.0
-    
     def set_linear(event):
         ax2.set_yscale('linear')
         ax2.set_ylim(init_ylim)
         fig2.canvas.draw_idle()
-    
     def set_symlog(event):
         ax2.set_yscale('symlog', linthresh=linthresh, linscale=1.0)
         fig2.canvas.draw_idle()
-    
     axlinear = plt.axes([0.8, 0.02, 0.1, 0.04])
     axsymlog = plt.axes([0.65, 0.02, 0.1, 0.04])
-    
     b_linear = Button(axlinear, 'Linear')
     b_symlog = Button(axsymlog, 'Symlog')
-    
     b_linear.on_clicked(set_linear)
     b_symlog.on_clicked(set_symlog)
-    
+    init_ylim = ax2.get_ylim()
     plt.tight_layout()
-    
+
     # ================================================================
     # FIGURE 3: Delta circles intersection plot
     # ================================================================
     print("Rendering Figure 3: δ‑Circles Intersection Analysis")
     fig3 = plot_delta_circles(triplets_list)
-    
+
     # ================================================================
     # DISPLAY
     # ================================================================
     print("\n✓ Visualization complete. Displaying all figures...")
     plt.show()
-
 else:
     print("No roots to display.")
